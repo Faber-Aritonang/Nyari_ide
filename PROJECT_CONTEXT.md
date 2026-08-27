@@ -3,8 +3,8 @@
 > ⭐ FILE KUNCI KONTINUITAS. Update setiap akhir sesi kerja!
 > AI assistant cukup dibekali file ini untuk melanjutkan project.
 
-Last updated: [ISI TANGGAL HARI INI]
-Current phase: FASE 0 — In Progress
+Last updated: 27 Agustus 2025  (sesuaikan)
+Current phase: FASE 0 — SELESAI ✅ / FASE 1 — siap mulai
 
 ## Ringkasan Project
 Webpage chat AI multimodal (text, image, voice), LLM opensource via Groq API,
@@ -21,12 +21,12 @@ autentikasi email+password (Supabase).
 - Bahasa UI: bilingual ID/EN via toggle (lib/i18n.ts)
 
 ## Status Pengerjaan
-✅ FASE 0 — Fondasi
-   ✅ Repo GitHub dibuat (public): github.com/Faber-Aritonang/Nyari_ide
-   ✅ Semua file dokumentasi ditulis
-   ✅ Init Next.js project (Next 16, TS, Tailwind, App Router)
-   ⬜ Setup Supabase project
-   ⬜ Deploy kosong ke Vercel (milestone pertama!)
+✅ FASE 0 — Fondasi (SELESAI)
+   ✅ Repo GitHub + dokumentasi lengkap
+   ✅ Init Next.js (Next 16, TS, Tailwind, App Router)
+   ✅ Setup Supabase (schema + RLS + whitelist + auth)
+   ✅ Deploy ke Vercel: https://nyari-ide.vercel.app ✅ MILESTONE 1
+⬜ FASE 1 — Autentikasi ← BERIKUTNYA
 ⬜ FASE 1 — Autentikasi
 ⬜ FASE 2 — Chat Text
 ⬜ FASE 3 — Multimodal (gambar, teks, PDF, voice)
