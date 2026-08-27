@@ -24,7 +24,7 @@ autentikasi email+password (Supabase).
 ✅ FASE 0 — Fondasi
    ✅ Repo GitHub dibuat (public): github.com/Faber-Aritonang/Nyari_ide
    ✅ Semua file dokumentasi ditulis
-   ⬜ Init Next.js project
+   ✅ Init Next.js project (Next 16, TS, Tailwind, App Router)
    ⬜ Setup Supabase project
    ⬜ Deploy kosong ke Vercel (milestone pertama!)
 ⬜ FASE 1 — Autentikasi
