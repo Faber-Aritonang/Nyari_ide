@@ -1,11 +1,13 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
+import { downloadImage } from "@/lib/image-gen";
 
 export interface Message {
   role: "user" | "assistant";
   content: string;
   image_url?: string | null;
+  generated_image_url?: string | null;
 }
 
 export default function ChatMessage({ message }: { message: Message }) {
@@ -27,6 +29,26 @@ export default function ChatMessage({ message }: { message: Message }) {
               alt="Uploaded image"
               className="rounded-lg max-w-full max-h-64 object-cover"
             />
+          </div>
+        )}
+        {message.generated_image_url && (
+          <div className="mb-2">
+            <img
+              src={message.generated_image_url}
+              alt="Generated image"
+              className="rounded-lg max-w-full max-h-96 object-contain"
+            />
+            <button
+              onClick={() =>
+                downloadImage(
+                  message.generated_image_url!,
+                  `nyari-ide-${Date.now()}.jpg`
+                )
+              }
+              className="mt-2 text-xs text-zinc-400 hover:text-white transition-colors"
+            >
+              ⬇ Download gambar
+            </button>
           </div>
         )}
         {isUser ? (

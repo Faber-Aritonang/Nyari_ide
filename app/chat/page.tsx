@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import ChatMessage, { type Message } from "@/app/components/ChatMessage";
 import { compressImage } from "@/lib/image-utils";
 import { readTextFile, extractPdfText } from "@/lib/file-utils";
+import { generateImageUrl } from "@/lib/image-gen";
 
 interface Conversation {
   id: string;
@@ -37,6 +38,7 @@ export default function ChatPage() {
     name: string;
     content: string;
   } | null>(null);
+  const [imageGenMode, setImageGenMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -201,8 +203,64 @@ export default function ChatPage() {
     }
   }
 
+  // Generate image via Pollinations.ai
+  async function handleGenerateImage() {
+    if (!input.trim() || sending || !activeConvId) return;
+
+    const prompt = input.trim();
+    setInput("");
+    setSending(true);
+    setImageGenMode(false);
+
+    // Add user message
+    setMessages((prev) => [...prev, { role: "user", content: `[Generate Gambar] ${prompt}` }]);
+    // Add loading placeholder
+    setMessages((prev) => [...prev, { role: "assistant", content: "🎨 Generating..." }]);
+
+    try {
+      const url = generateImageUrl(prompt, "1024");
+      // Tunggu gambar load
+      const img = new Image();
+      img.src = url;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Gagal generate gambar"));
+        setTimeout(() => reject(new Error("Timeout: gambar terlalu lama")), 60000);
+      });
+
+      // Replace loading dengan gambar
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastIdx = updated.length - 1;
+        updated[lastIdx] = {
+          role: "assistant",
+          content: `🎨 Gambar generated dari prompt: "${prompt}"`,
+          generated_image_url: url,
+        };
+        return updated;
+      });
+    } catch (err) {
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastIdx = updated.length - 1;
+        updated[lastIdx] = {
+          role: "assistant",
+          content: `❌ ${err instanceof Error ? err.message : "Gagal generate gambar."}`,
+        };
+        return updated;
+      });
+    }
+    setSending(false);
+  }
+
   // Send message
   async function sendMessage() {
+    // Jika image gen mode, jalankan generate
+    if (imageGenMode && input.trim()) {
+      await handleGenerateImage();
+      return;
+    }
+
     if ((!input.trim() && !selectedImage) || sending || !activeConvId) return;
 
     const userMessage = input.trim() || (selectedFile ? "(file: " + selectedFile.name + ")" : "(gambar)");
@@ -504,22 +562,41 @@ export default function ChatPage() {
                         className="hidden"
                       />
                     </label>
+                    <button
+                      onClick={() => {
+                        setImageGenMode(!imageGenMode);
+                        setSelectedImage(null);
+                        setSelectedFile(null);
+                      }}
+                      className={`rounded-xl border px-3 py-3 text-sm transition-colors ${
+                        imageGenMode
+                          ? "bg-purple-600 border-purple-500 text-white"
+                          : "bg-zinc-800 hover:bg-zink-700 border-zinc-700"
+                      }`}
+                      title="Generate gambar dari teks (Flux via Pollinations.ai)"
+                    >
+                      🎨
+                    </button>
                   </div>
                   <textarea
                     ref={textareaRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ketik pesan... (Enter untuk kirim, Shift+Enter baris baru)"
+                    placeholder={imageGenMode ? "Deskripsikan gambar yang ingin dibuat..." : "Ketik pesan... (Enter untuk kirim, Shift+Enter baris baru)"}
                     rows={1}
                     className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-blue-500 placeholder:text-zinc-500"
                   />
                   <button
                     onClick={sendMessage}
                     disabled={sending || !input.trim()}
-                    className="rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-4 py-3 text-sm font-medium transition-colors"
+                    className={`rounded-xl disabled:opacity-50 px-4 py-3 text-sm font-medium transition-colors ${
+                      imageGenMode
+                        ? "bg-purple-600 hover:bg-purple-500"
+                        : "bg-blue-600 hover:bg-blue-500"
+                    }`}
                   >
-                    {sending ? "..." : "Kirim"}
+                    {sending ? "..." : imageGenMode ? "Generate" : "Kirim"}
                   </button>
                 </div>
               </div>
