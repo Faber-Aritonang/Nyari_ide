@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ChatMessage, { type Message } from "@/app/components/ChatMessage";
 import { compressImage } from "@/lib/image-utils";
+import { readTextFile, extractPdfText } from "@/lib/file-utils";
 
 interface Conversation {
   id: string;
@@ -32,6 +33,10 @@ export default function ChatPage() {
   const [models, setModels] = useState<ModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<{
+    name: string;
+    content: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -132,6 +137,34 @@ export default function ChatPage() {
     }
   }
 
+  // Handle file (teks/PDF) selection
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      let content: string;
+
+      if (file.type === "application/pdf") {
+        content = await extractPdfText(file);
+      } else if (
+        file.type.startsWith("text/") ||
+        [".js", ".ts", ".py", ".json", ".md", ".html", ".css", ".sql", ".yaml", ".yml", ".xml", ".csv", ".txt", ".log", ".env", ".config"].some((ext) => file.name.endsWith(ext))
+      ) {
+        content = await readTextFile(file);
+      } else {
+        alert("Format file tidak didukung. Gunakan file teks atau PDF.");
+        return;
+      }
+
+      setSelectedFile({ name: file.name, content });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Gagal membaca file.");
+    }
+    // Reset input agar bisa upload file yang sama lagi
+    e.target.value = "";
+  }
+
   // Handle image selection
   async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -172,10 +205,12 @@ export default function ChatPage() {
   async function sendMessage() {
     if ((!input.trim() && !selectedImage) || sending || !activeConvId) return;
 
-    const userMessage = input.trim() || "(gambar)";
+    const userMessage = input.trim() || (selectedFile ? "(file: " + selectedFile.name + ")" : "(gambar)");
     const imageToSend = selectedImage;
+    const fileToSend = selectedFile;
     setInput("");
     setSelectedImage(null);
+    setSelectedFile(null);
     setSending(true);
 
     // Add user message to UI immediately
@@ -205,6 +240,7 @@ export default function ChatPage() {
           message: userMessage,
           model: selectedModel,
           imageUrl: imageToSend,
+          fileContext: fileToSend?.content,
         }),
       });
 
@@ -432,17 +468,43 @@ export default function ChatPage() {
                     <p className="text-xs text-zinc-500 mt-1">Gambar akan di-compress otomatis ke JPEG</p>
                   </div>
                 )}
+                {/* File preview */}
+                {selectedFile && (
+                  <div className="mb-3 flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2">
+                    <span className="text-sm">📄</span>
+                    <span className="text-xs text-zinc-300 flex-1 truncate">
+                      {selectedFile.name} ({(selectedFile.content.length / 1000).toFixed(1)}K chars)
+                    </span>
+                    <button
+                      onClick={() => setSelectedFile(null)}
+                      className="text-zinc-500 hover:text-red-400 text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-end gap-3">
-                  {/* Upload image button */}
-                  <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors" title="Upload gambar (JPG/PNG, maks 4MB)">
-                    🖼️
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleImageSelect}
-                      className="hidden"
-                    />
-                  </label>
+                  {/* Upload buttons */}
+                  <div className="flex gap-1">
+                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors" title="Upload gambar (JPG/PNG, maks 4MB)">
+                      🖼️
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                      />
+                    </label>
+                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors" title="Upload file teks/PDF (maks 200KB teks, 5MB PDF)">
+                      📎
+                      <input
+                        type="file"
+                        accept=".txt,.js,.ts,.py,.json,.md,.html,.css,.sql,.yaml,.yml,.xml,.csv,.log,.env,.config,.pdf,text/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                   <textarea
                     ref={textareaRef}
                     value={input}

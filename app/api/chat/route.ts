@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Parse body request
-    const { conversationId, message, model, imageUrl } = await request.json();
+    const { conversationId, message, model, imageUrl, fileContext } = await request.json();
 
     if (!conversationId || !message?.trim()) {
       return NextResponse.json(
@@ -72,28 +72,44 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Bangun messages array untuk Groq
-    // Penting: HANYA gambar terkini yang dikirim. Gambar lama di-strip
-    // untuk menghindari "Too many images" (max 3) dan rate limit TPM.
-    // Batasi juga jumlah history agar tidak melebihi TPM limit.
+    // Penting: HANYA konten terkini yang dikirim. Gambar/file lama di-strip
+    // untuk menghindari rate limit TPM.
     const MAX_HISTORY_MESSAGES = 20;
     const recentHistory = (history ?? []).slice(-MAX_HISTORY_MESSAGES);
 
+    // Bangun konteks user message: teks + gambar + file (jika ada)
+    const userParts: Array<
+      | { type: "text"; text: string }
+      | { type: "image_url"; image_url: { url: string } }
+    > = [];
+
+    // Teks utama (dengan context file jika ada)
+    let userText = message.trim();
+    if (fileContext) {
+      userText =
+        `[Konteks dari file yang diunggah]:\n\n${fileContext}\n\n---\n\nPertanyaan: ${userText}`;
+    }
+    userParts.push({ type: "text", text: userText });
+
+    // Gambar (jika ada)
+    if (imageUrl) {
+      userParts.push({ type: "image_url", image_url: { url: imageUrl } });
+    }
+
     const groqMessages = [
       { role: "system", content: SYSTEM_PROMPT },
-      // Riwayat: HANYA teks (gambar lama di-strip)
+      // Riwayat: HANYA teks (gambar & file lama di-strip)
       ...recentHistory.map((m) => ({
         role: m.role,
         content: m.content ?? "",
       })),
-      // Pesan saat ini: teks + gambar (jika ada)
+      // Pesan saat ini: teks [+ file] [+ gambar]
       {
         role: "user" as const,
-        content: imageUrl
-          ? [
-              { type: "text", text: message.trim() },
-              { type: "image_url", image_url: { url: imageUrl } },
-            ]
-          : message.trim(),
+        content:
+          userParts.length === 1 && userParts[0].type === "text"
+            ? userParts[0].text
+            : userParts,
       },
     ];
 
