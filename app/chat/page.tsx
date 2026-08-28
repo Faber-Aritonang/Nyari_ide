@@ -8,6 +8,7 @@ import { compressImage } from "@/lib/image-utils";
 import { readTextFile, extractPdfText } from "@/lib/file-utils";
 import { generateImageUrl } from "@/lib/image-gen";
 import { recordAudio } from "@/lib/voice-utils";
+import { t, getLang, setLang, type Lang } from "@/lib/i18n";
 
 interface Conversation {
   id: string;
@@ -41,6 +42,7 @@ export default function ChatPage() {
   } | null>(null);
   const [imageGenMode, setImageGenMode] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [lang, setLangState] = useState<Lang>(getLang());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -126,7 +128,7 @@ export default function ChatPage() {
 
   // Delete conversation
   async function deleteConversation(id: string) {
-    if (!confirm("Hapus percakapan ini?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
 
     const res = await fetch(`/api/conversations/${id}`, {
       method: "DELETE",
@@ -205,6 +207,13 @@ export default function ChatPage() {
     }
   }
 
+  // Toggle bahasa
+  function toggleLang() {
+    const newLang = lang === "id" ? "en" : "id";
+    setLang(newLang);
+    setLangState(newLang);
+  }
+
   // Voice input: rekam audio → transcribe via Whisper
   async function handleVoiceInput() {
     if (recording) return;
@@ -214,6 +223,10 @@ export default function ChatPage() {
 
       // 1. Rekam audio
       const audioBlob = await recordAudio();
+      if (audioBlob.size === 0) {
+        setRecording(false);
+        return;
+      }
 
       // 2. Kirim ke /api/transcribe
       const formData = new FormData();
@@ -226,7 +239,7 @@ export default function ChatPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Gagal transkrip audio." }));
-        alert(err.error || "Gagal transkrip audio.");
+        alert(err.error || t("transcribeError"));
         setRecording(false);
         return;
       }
@@ -236,7 +249,7 @@ export default function ChatPage() {
         setInput((prev) => (prev ? prev + " " + text : text));
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Gagal merekam audio.");
+      alert(err instanceof Error ? err.message : t("voiceError"));
     }
     setRecording(false);
   }
@@ -253,7 +266,7 @@ export default function ChatPage() {
     // Add user message
     setMessages((prev) => [...prev, { role: "user", content: `[Generate Gambar] ${prompt}` }]);
     // Add loading placeholder
-    setMessages((prev) => [...prev, { role: "assistant", content: "🎨 Generating..." }]);
+    setMessages((prev) => [...prev, { role: "assistant", content: `🎨 ${t("generating")}` }]);
 
     try {
       const url = generateImageUrl(prompt, "1024");
@@ -283,7 +296,7 @@ export default function ChatPage() {
         const lastIdx = updated.length - 1;
         updated[lastIdx] = {
           role: "assistant",
-          content: `❌ ${err instanceof Error ? err.message : "Gagal generate gambar."}`,
+          content: `❌ ${err instanceof Error ? err.message : t("networkError")}`,
         };
         return updated;
       });
@@ -347,7 +360,7 @@ export default function ChatPage() {
           const lastIdx = updated.length - 1;
           updated[lastIdx] = {
             role: "assistant",
-            content: `❌ ${err.error || "Gagal mengirim pesan."}`,
+            content: `❌ ${err.error || t("networkError")}`,
           };
           return updated;
         });
@@ -404,7 +417,7 @@ export default function ChatPage() {
         const lastIdx = updated.length - 1;
         updated[lastIdx] = {
           role: "assistant",
-          content: "❌ Terjadi kesalahan jaringan. Coba lagi.",
+          content: `❌ ${t("networkError")}`,
         };
         return updated;
       });
@@ -433,7 +446,16 @@ export default function ChatPage() {
       <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-zinc-800">
-          <h1 className="text-lg font-bold">Nyari_ide 🧠</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-bold">🧠 {t("appName")}</h1>
+            <button
+              onClick={toggleLang}
+              className="text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded px-2 py-1 transition-colors"
+              title="Toggle ID/EN"
+            >
+              {lang === "id" ? "EN" : "ID"}
+            </button>
+          </div>
         </div>
 
         {/* New conversation button */}
@@ -442,7 +464,7 @@ export default function ChatPage() {
             onClick={createConversation}
             className="w-full rounded-lg bg-blue-600 hover:bg-blue-500 py-2.5 text-sm font-medium transition-colors"
           >
-            + Percakapan Baru
+            + {t("newConversation")}
           </button>
         </div>
 
@@ -473,9 +495,12 @@ export default function ChatPage() {
 
           {conversations.length === 0 && (
             <p className="text-xs text-zinc-500 text-center mt-8">
-              Belum ada percakapan.
-              <br />
-              Klik tombol di atas untuk memulai.
+              {t("noConversations").split("\n").map((line, i) => (
+                <span key={i}>
+                  {line}
+                  {i < t("noConversations").split("\n").length - 1 && <br />}
+                </span>
+              ))}
             </p>
           )}
         </div>
@@ -501,7 +526,7 @@ export default function ChatPage() {
               <div className="max-w-3xl mx-auto">
                 {loadingHistory && (
                   <p className="text-center text-zinc-500 text-sm">
-                    Memuat riwayat...
+                    {t("loadingHistory")}
                   </p>
                 )}
 
@@ -509,7 +534,7 @@ export default function ChatPage() {
                   <div className="text-center text-zinc-500 mt-20">
                     <p className="text-4xl mb-4">🧠</p>
                     <p className="text-lg font-medium mb-2">
-                      Mulai percakapan baru
+                      {t("appName")} 🧠💡
                     </p>
                     <p className="text-sm">
                       Kirim pesan untuk memulai chatting dengan Nyari_ide.
@@ -582,7 +607,7 @@ export default function ChatPage() {
                 <div className="flex items-end gap-3">
                   {/* Upload buttons */}
                   <div className="flex gap-1">
-                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors" title="Upload gambar (JPG/PNG, maks 4MB)">
+                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors"                      title={t("uploadImage")}>
                       🖼️
                       <input
                         type="file"
@@ -591,7 +616,7 @@ export default function ChatPage() {
                         className="hidden"
                       />
                     </label>
-                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors" title="Upload file teks/PDF (maks 200KB teks, 5MB PDF)">
+                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors"                      title={t("uploadFile")}>
                       📎
                       <input
                         type="file"
@@ -623,7 +648,7 @@ export default function ChatPage() {
                           ? "bg-red-600 border-red-500 text-white animate-pulse"
                           : "bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
                       }`}
-                      title={recording ? "Merekam... klik untuk berhenti" : "Rekam suara (Whisper)"}
+                      title={recording ? t("recording") : t("voiceInput")}
                     >
                       {recording ? "⏺" : "🎤"}
                     </button>
@@ -633,7 +658,7 @@ export default function ChatPage() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={imageGenMode ? "Deskripsikan gambar yang ingin dibuat..." : "Ketik pesan... (Enter untuk kirim, Shift+Enter baris baru)"}
+                    placeholder={imageGenMode ? t("typeImagePrompt") : t("typeMessage")}
                     rows={1}
                     className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-blue-500 placeholder:text-zinc-500"
                   />
@@ -646,7 +671,7 @@ export default function ChatPage() {
                         : "bg-blue-600 hover:bg-blue-500"
                     }`}
                   >
-                    {sending ? "..." : imageGenMode ? "Generate" : "Kirim"}
+                    {sending ? "..." : imageGenMode ? t("generate") : t("send")}
                   </button>
                 </div>
               </div>
@@ -656,16 +681,15 @@ export default function ChatPage() {
           /* No conversation selected */
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center text-zinc-500">
-              <p className="text-4xl mb-4">🧠💡</p>
-              <p className="text-lg font-medium mb-2">Nyari_ide</p>
-              <p className="text-sm mb-6">
-                Pilih percakapan atau buat yang baru.
-              </p>
+              <p className="text-4xl mb-4">🧠💡</p>                    <p className="text-lg font-medium mb-2">{t("appName")}</p>
+                    <p className="text-sm mb-6">
+                      {t("selectOrCreate")}
+                    </p>
               <button
                 onClick={createConversation}
                 className="rounded-lg bg-blue-600 hover:bg-blue-500 px-6 py-2.5 text-sm font-medium transition-colors"
               >
-                + Percakapan Baru
+                + {t("newConversation")}
               </button>
             </div>
           </div>

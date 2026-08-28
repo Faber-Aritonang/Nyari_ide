@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { downloadImage } from "@/lib/image-gen";
+import { t } from "@/lib/i18n";
 
 export interface Message {
   role: "user" | "assistant";
@@ -18,7 +19,7 @@ export default function ChatMessage({ message }: { message: Message }) {
   // Text-to-Speech using Web Speech API
   function handleTTS() {
     if (!("speechSynthesis" in window)) {
-      alert("Browser tidak mendukung text-to-speech.");
+      alert(t("ttsNotSupported"));
       return;
     }
 
@@ -135,7 +136,7 @@ export default function ChatMessage({ message }: { message: Message }) {
             }`}
             title={speaking ? "Hentikan suara" : "Dengarkan jawaban"}
           >
-            {speaking ? "⏹ Stop" : "🔊 Dengarkan"}
+            {speaking ? `⏹ ${t("stop")}` : `🔊 ${t("listen")}`}
           </button>
         )}
       </div>
