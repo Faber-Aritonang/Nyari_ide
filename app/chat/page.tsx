@@ -137,6 +137,13 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validasi format
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      alert("Format gambar tidak didukung. Gunakan JPG, PNG, atau WebP.");
+      return;
+    }
+
     // Validasi ukuran (maks 4MB)
     if (file.size > 4 * 1024 * 1024) {
       alert("Ukuran gambar maksimal 4MB.");
@@ -422,15 +429,16 @@ export default function ChatPage() {
                     >
                       ✕
                     </button>
+                    <p className="text-xs text-zinc-500 mt-1">Gambar akan di-compress otomatis ke JPEG</p>
                   </div>
                 )}
                 <div className="flex items-end gap-3">
                   {/* Upload image button */}
-                  <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors" title="Upload gambar">
+                  <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors" title="Upload gambar (JPG/PNG, maks 4MB)">
                     🖼️
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       onChange={handleImageSelect}
                       className="hidden"
                     />
