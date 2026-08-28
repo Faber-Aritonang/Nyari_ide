@@ -7,7 +7,7 @@ import ChatMessage, { type Message } from "@/app/components/ChatMessage";
 import { compressImage } from "@/lib/image-utils";
 import { readTextFile, extractPdfText } from "@/lib/file-utils";
 import { generateImageUrl } from "@/lib/image-gen";
-import { recordAudio } from "@/lib/voice-utils";
+import { startRecording, stopRecording, stopCurrentRecording } from "@/lib/voice-utils";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
 
 interface Conversation {
@@ -42,6 +42,7 @@ export default function ChatPage() {
   } | null>(null);
   const [imageGenMode, setImageGenMode] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [mediaStopFn, setMediaStopFn] = useState<(() => Promise<Blob>) | null>(null);
   const [lang, setLangState] = useState<Lang>(getLang());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -214,23 +215,37 @@ export default function ChatPage() {
     setLangState(newLang);
   }
 
-  // Voice input: rekam audio → transcribe via Whisper
+  // Voice input: start/stop recording → transcribe via Whisper
   async function handleVoiceInput() {
-    if (recording) return;
-
-    try {
-      setRecording(true);
-
-      // 1. Rekam audio
-      const audioBlob = await recordAudio();
-      if (audioBlob.size === 0) {
-        setRecording(false);
+    if (recording) {
+      // STOP recording
+      setRecording(false);
+      const blob = await stopRecording();
+      if (!blob || blob.size < 100) {
+        // Audio terlalu kecil, abaikan
         return;
       }
+      await transcribeAudio(blob);
+      return;
+    }
 
-      // 2. Kirim ke /api/transcribe
+    // START recording
+    try {
+      const { stop } = await startRecording();
+      setMediaStopFn(() => stop);
+      setRecording(true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : t("voiceError"));
+    }
+  }
+
+  // Transcribe audio via Whisper
+  async function transcribeAudio(audioBlob: Blob) {
+    try {
       const formData = new FormData();
-      formData.append("audio", audioBlob, "recording.webm");
+      // Kirim dengan format yang benar
+      const ext = audioBlob.type.includes("webm") ? "webm" : audioBlob.type.includes("mp4") ? "mp4" : "ogg";
+      formData.append("audio", audioBlob, `recording.${ext}`);
 
       const res = await fetch("/api/transcribe", {
         method: "POST",
@@ -238,20 +253,18 @@ export default function ChatPage() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Gagal transkrip audio." }));
+        const err = await res.json().catch(() => ({ error: t("transcribeError") }));
         alert(err.error || t("transcribeError"));
-        setRecording(false);
         return;
       }
 
       const { text } = await res.json();
-      if (text) {
-        setInput((prev) => (prev ? prev + " " + text : text));
+      if (text && text.trim()) {
+        setInput((prev) => (prev ? prev + " " + text.trim() : text.trim()));
       }
     } catch (err) {
       alert(err instanceof Error ? err.message : t("voiceError"));
     }
-    setRecording(false);
   }
 
   // Generate image via Pollinations.ai
@@ -642,7 +655,6 @@ export default function ChatPage() {
                     </button>
                     <button
                       onClick={handleVoiceInput}
-                      disabled={recording}
                       className={`rounded-xl border px-3 py-3 text-sm transition-colors ${
                         recording
                           ? "bg-red-600 border-red-500 text-white animate-pulse"
@@ -650,7 +662,7 @@ export default function ChatPage() {
                       }`}
                       title={recording ? t("recording") : t("voiceInput")}
                     >
-                      {recording ? "⏺" : "🎤"}
+                      {recording ? "⏹" : "🎤"}
                     </button>
                   </div>
                   <textarea
