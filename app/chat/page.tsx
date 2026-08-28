@@ -11,6 +11,12 @@ interface Conversation {
   created_at: string;
 }
 
+interface ModelOption {
+  id: string;
+  label: string;
+  description: string;
+}
+
 export default function ChatPage() {
   const supabase = createClient();
   const router = useRouter();
@@ -22,6 +28,8 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [models, setModels] = useState<ModelOption[]>([]);
+  const [selectedModel, setSelectedModel] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -40,10 +48,17 @@ export default function ChatPage() {
       if (res.ok) {
         const convs = await res.json();
         setConversations(convs);
-        // Auto-select first conversation if exists
         if (convs.length > 0) {
           setActiveConvId(convs[0].id);
         }
+      }
+
+      // Fetch available models
+      const modelsRes = await fetch("/api/models");
+      if (modelsRes.ok) {
+        const modelList = await modelsRes.json();
+        setModels(modelList);
+        if (modelList.length > 0) setSelectedModel(modelList[0].id);
       }
     }
     init();
@@ -145,6 +160,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           conversationId: activeConvId,
           message: userMessage,
+          model: selectedModel,
         }),
       });
 
@@ -335,6 +351,26 @@ export default function ChatPage() {
             {/* Input area */}
             <div className="border-t border-zinc-800 p-4">
               <div className="max-w-3xl mx-auto">
+                {/* Model selector */}
+                {models.length > 1 && (
+                  <div className="mb-3 flex items-center gap-2">
+                    <label className="text-xs text-zinc-500">Model:</label>
+                    <select
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-blue-500"
+                    >
+                      {models.map((m) => (
+                        <option key={m.id} value={m.id} title={m.description}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-xs text-zinc-600">
+                      {models.find((m) => m.id === selectedModel)?.description}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-end gap-3">
                   <textarea
                     ref={textareaRef}

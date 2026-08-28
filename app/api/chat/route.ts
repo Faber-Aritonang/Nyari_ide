@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { CHAT_CONFIG, SYSTEM_PROMPT } from "@/lib/groq";
+import { AVAILABLE_MODELS, DEFAULT_MODEL, CHAT_CONFIG, SYSTEM_PROMPT } from "@/lib/groq";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Parse body request
-    const { conversationId, message } = await request.json();
+    const { conversationId, message, model } = await request.json();
 
     if (!conversationId || !message?.trim()) {
       return NextResponse.json(
@@ -26,6 +26,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Validasi model — harus ada di daftar yang diizinkan
+    const selectedModel =
+      model && AVAILABLE_MODELS.some((m) => m.id === model)
+        ? model
+        : DEFAULT_MODEL;
 
     // 3. Verifikasi bahwa conversation milik user ini
     const { data: conversation, error: convError } = await supabase
@@ -81,6 +87,7 @@ export async function POST(request: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          model: selectedModel,
           ...CHAT_CONFIG,
           messages: groqMessages,
           stream: true,
