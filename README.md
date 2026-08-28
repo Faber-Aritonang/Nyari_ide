@@ -15,17 +15,20 @@ sehingga bisa dilanjutkan kapan saja dari perangkat mana pun.
 
 ## 🎯 Apa yang Bisa Dilakukan Aplikasi Ini?
 
-Setelah selesai (v1.0), pengguna yang sudah login dapat:
+Pengguna yang sudah login dapat:
 
 | Fitur | Penjelasan |
 |---|---|
-| 💬 Chat text | Bertanya/jawab dengan LLM opensource (Llama 3.3 70B via Groq API), respons streaming |
-| 🖼️ Text-to-image | Menulis prompt → AI membuat gambar (via Pollinations.ai) |
-| 🔊 Text-to-speech | Suara AI membacakan jawaban |
-| 🎤 Voice input | Bicara ke mikrofon → diubah jadi teks (Whisper) |
-| 📎 Upload file | Kirim gambar (dianalisis AI vision), dokumen teks, dan PDF sebagai konteks percakapan |
+| 💬 Chat text | Bertanya/jawab dengan LLM opensource (Qwen 3.8 27B via Groq API), respons streaming |
+| 🖼️ Upload gambar | Kirim gambar → AI menganalisis (compressed otomatis 512x512) |
+| 📄 Upload file | Kirim file teks/PDF → AI membaca & menjawab (pdf.js client-side) |
+| 🎨 Text-to-image | Menulis prompt → AI membuat gambar (GPT Image 2 via Pollinations.ai) |
+| 🔊 Text-to-speech | Suara AI membacakan jawaban (Groq Orpheus — English + Arabic Saudi) |
+| 🎤 Voice input | Bicara ke mikrofon → diubah jadi teks (Whisper Large v3 Turbo) |
+| 🔄 Model selector | Pilih model AI: Qwen 3.8/3.6, GPT-OSS 120B/20B |
 | 🌐 Bilingual | Antarmuka dalam Bahasa Indonesia & English |
 | 🗂️ Riwayat chat | Percakapan tersimpan per user di database, bisa dibuka dari device mana pun |
+| 📱 Mobile | Responsive di HP & desktop |
 
 ## 🚫 Kenapa Proyek Ini Dibuat?
 
@@ -35,32 +38,34 @@ Setelah selesai (v1.0), pengguna yang sudah login dapat:
 4. **Fondasi untuk fitur lanjutan** seperti RAG (Retrieval-Augmented Generation) agar AI menjawab spesifik berdasarkan dokumen
 
 ## 🛠️ Bagaimana Cara Kerjanya? (Arsitektur Singkat)
+
+```
 Pengguna (browser)
 │ login email+password
 ▼
 Next.js Web App ──► Supabase Auth (whitelist maks 10 akun)
-│ Supabase DB (riwayat chat per user)
+│                    Supabase DB (riwayat chat per user)
 │
-├──► Groq API : chat text + vision + whisper (LLM opensource)
-├──► Pollinations.ai : text-to-image
-└──► Web Speech API : text-to-speech (bawaan browser)
+├──► Groq API : chat text + vision + whisper + Orpheus TTS (LLM opensource)
+├──► Pollinations.ai : text-to-image (GPT Image 2)
+└──► Admin page : manajemen whitelist
+```
 
 Deploy: Vercel (free tier) → dapat URL publik, tapi hanya whitelist yang bisa masuk
-
 
 Semua API key tersimpan **hanya di sisi server** — tidak pernah terekspos di browser.
 
 ## 📊 Status Proyek
 
-> Sedang dalam tahap **FASE 0 — Fondasi** (dokumentasi & setup awal).
+> **v1.0 RILIS!** ✅ Semua fase sudah selesai.
 
 Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 
-- ✅ FASE 0 — Fondasi & dokumentasi *(sedang berjalan)*
-- ⬜ FASE 1 — Autentikasi (login, register, whitelist)
-- ⬜ FASE 2 — Chat text fungsional
-- ⬜ FASE 3 — Multimodal (gambar, PDF, voice)
-- ⬜ FASE 4 — Polesan & rilis v1.0
+- ✅ FASE 0 — Fondasi & dokumentasi
+- ✅ FASE 1 — Autentikasi (login, register, whitelist)
+- ✅ FASE 2 — Chat text fungsional
+- ✅ FASE 3 — Multimodal (gambar, PDF, voice)
+- ✅ FASE 4 — Polesan & rilis v1.0
 
 ## 📁 Struktur Dokumentasi (untuk yang ingin menelusuri)
 
@@ -76,12 +81,12 @@ Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 
 | Komponen | Teknologi |
 |---|---|
-| Frontend | Next.js (TypeScript, Tailwind CSS) |
-| LLM | Groq API — Llama 3.3 70B, Llama 3.1 8B (opensource) |
-| Vision | Llama 4 Scout via Groq |
-| Voice input | Whisper Large v3 via Groq |
-| Text-to-image | Pollinations.ai |
-| Text-to-speech | Web Speech API (native browser) |
+| Frontend | Next.js 16 (TypeScript, Tailwind CSS, App Router) |
+| LLM | Groq API — Qwen 3.8/3.6, GPT-OSS 120B/20B (opensource) |
+| TTS | Groq Orpheus — English (hannah) + Arabic Saudi (noura) |
+| Voice input | Whisper Large v3 Turbo via Groq |
+| Text-to-image | Pollinations.ai (GPT Image 2) |
+| PDF extraction | pdfjs-dist (client-side) |
 | Auth + Database | Supabase (email+password, PostgreSQL, RLS) |
 | Deploy | Vercel (free tier) |
 

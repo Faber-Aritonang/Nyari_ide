@@ -4,7 +4,7 @@
 > AI assistant cukup dibekali file ini untuk melanjutkan project.
 
 Last updated: 28 Agustus 2026
-Current phase: FASE 3 — SELESAI ✅ / FASE 4 — siap mulai
+Current phase: v1.0 SELESAI ✅
 
 ## Ringkasan Project
 Webpage chat AI multimodal (text, image, voice), LLM opensource via Groq API,
@@ -14,6 +14,9 @@ autentikasi email+password (Supabase).
 ## Tech Stack
 - Frontend: Next.js 16 (App Router, TypeScript, Tailwind CSS)
 - LLM: Groq API — model selection lihat lib/groq.ts
+- TTS: Groq Orpheus (English + Arabic Saudi untuk Indonesia)
+- STT: Whisper Large v3 Turbo via Groq
+- Text-to-image: Pollinations.ai (GPT Image 2)
 - PDF extraction: pdfjs-dist (client-side)
 - Auth & DB & Storage: Supabase (auth, Postgres, RLS)
 - Deploy: Vercel (free tier)
@@ -26,53 +29,32 @@ autentikasi email+password (Supabase).
 | qwen/qwen3.6-27b | Chat + Vision | Alternatif Qwen |
 | openai/gpt-oss-120b | Chat only | Flagship, kualitas terbaik |
 | openai/gpt-oss-20b | Chat only | Cepat & ringan |
-| whisper-large-v3 | STT | Voice input (FASE 4) |
+| whisper-large-v3-turbo | STT | Voice input (cepat) |
+| orpheus-v1-english | TTS | Suara natural English |
+| orpheus-arabic-saudi | TTS | Suara natural untuk Indonesia |
 
 ## Status Pengerjaan
 ✅ FASE 0 — Fondasi (SELESAI)
-   ✅ Repo GitHub + dokumentasi lengkap
-   ✅ Init Next.js (Next 16, TS, Tailwind, App Router)
-   ✅ Setup Supabase (schema + RLS + whitelist + auth)
-   ✅ Deploy ke Vercel ✅ MILESTONE 1
-
 ✅ FASE 1 — Autentikasi (SELESAI)
-   ✅ Integrasi Supabase Auth (email+password)
-   ✅ Halaman register (cek whitelist allowed_emails)
-   ✅ Halaman login
-   ✅ Middleware proteksi route /dashboard + /chat
-   ✅ Logout
-✅ MILESTONE 2: hanya user whitelisted bisa masuk
-
 ✅ FASE 2 — Chat Text (SELESAI)
-   ✅ lib/groq.ts — config model terpusat
-   ✅ API route POST /api/chat — streaming relay ke Groq + auth + simpan pesan
-   ✅ API route GET/POST/DELETE /api/conversations — CRUD percakapan
-   ✅ API route GET /api/conversations/[id]/messages — ambil riwayat
-   ✅ API route GET /api/models — list model tersedia
-   ✅ UI chat: sidebar + area chat + streaming response
-   ✅ ChatMessage component (bubble + markdown)
-   ✅ Input box (Enter kirim, Shift+Enter baris baru)
-   ✅ Auto-scroll, judul otomatis, hapus percakapan
-   ✅ Error handling: rate limit, network error
-✅ MILESTONE 3: chat text fungsional tersimpan
-
 ✅ FASE 3 — Multimodal (SELESAI)
-   ✅ Model selector dropdown (4 model tersedia)
-   ✅ Upload gambar → vision (compressed otomatis 512x512 JPEG 70%)
-   ✅ Upload file teks → context injection (max 8000 chars)
-   ✅ Upload PDF → extract teks via pdf.js client-side (max 10 halaman)
-   ✅ Gambar/file lama di-strip dari riwayat (hemat token)
-   ✅ Keterangan format gambar di UI (tooltip + validasi)
-   ✅ Tombol 🖼️ (gambar) + 📎 (file) di input area
-✅ MILESTONE 4: multimodal lengkap
+✅ FASE 4 — Polesan (SELESAI) ← v1.0 RILIS!
 
-⬜ FASE 4 — Polesan ← BERIKUTNYA
-   ⬜ Text-to-speech (Web Speech API)
-   ⬜ Voice input (Whisper via Groq)
-   ⬜ Toggle bahasa ID/EN (lib/i18n.ts)
-   ⬜ Responsive mobile
-   ⬜ Manajemen whitelist (admin page)
-   ⬜ Error handling & loading states
+### Fitur Lengkap v1.0:
+| Fitur | Teknologi | Biaya |
+|---|---|---|
+| 💬 Chat text streaming | Qwen 3.8 27B via Groq | Gratis |
+| 🖼️ Upload gambar → vision | Qwen 3.8 + compress otomatis | Gratis |
+| 📄 Upload file teks | Context injection (max 8000 chars) | Gratis |
+| 📎 Upload PDF | pdf.js client-side (max 10 halaman) | Gratis |
+| 🎨 Text-to-image | GPT Image 2 via Pollinations.ai | Gratis |
+| 🎤 Voice input | Whisper Large v3 Turbo (Groq) | Gratis |
+| 🔊 Text-to-speech | Orpheus EN + Arabic SA (Groq) | Gratis |
+| 🌐 Toggle bahasa ID/EN | lib/i18n.ts (persist localStorage) | - |
+| 📱 Responsive mobile | Tailwind CSS + hamburger menu | - |
+| 👤 Admin whitelist | /admin — tambah/hapus email | Gratis |
+| 🔄 Model selector | Dropdown (4 model tersedia) | Gratis |
+| 🗂️ Riwayat chat | Supabase per user, RLS aktif | Gratis |
 
 ## Struktur File Penting
 ```
@@ -80,12 +62,16 @@ app/
 ├── api/
 │   ├── chat/route.ts              — Streaming chat ke Groq
 │   ├── models/route.ts            — List model tersedia
+│   ├── transcribe/route.ts        — Whisper STT
+│   ├── tts/route.ts               — Groq Orpheus TTS
+│   ├── admin/whitelist/route.ts   — CRUD whitelist
 │   └── conversations/
 │       ├── route.ts               — List & buat percakapan
 │       ├── [id]/route.ts          — Hapus percakapan
 │       └── [id]/messages/route.ts — Ambil pesan
 ├── chat/page.tsx                  — Halaman utama chat
-├── components/ChatMessage.tsx     — Komponen bubble pesan
+├── admin/page.tsx                 — Admin whitelist page
+├── components/ChatMessage.tsx     — Bubble pesan + TTS + generated image
 ├── login/page.tsx                 — Login
 ├── register/page.tsx              — Register
 ├── dashboard/page.tsx             — Dashboard placeholder
@@ -95,7 +81,10 @@ lib/
 ├── groq.ts                        — Config model (AVAILABLE_MODELS, CHAT_CONFIG)
 ├── auth.ts                        — isEmailAllowed()
 ├── image-utils.ts                 — Kompres gambar (512x512 JPEG)
+├── image-gen.ts                   — Text-to-image via Pollinations.ai
 ├── file-utils.ts                  — Baca file teks + extract PDF
+├── voice-utils.ts                 — MediaRecorder wrapper
+├── i18n.ts                        — String ID/EN
 └── supabase/
     ├── server.ts                  — Server-side Supabase client
     ├── client.ts                  — Browser-side Supabase client
@@ -115,19 +104,20 @@ middleware.ts                       — Next.js middleware entry point
 - File teks: max 8000 chars (~2000 tokens) — hemat TPM
 - PDF: max 10 halaman, max 8000 chars
 - Model selector: daftar model di lib/groq.ts, validasi server-side
-- Nanti: RAG dengan pgvector (Supabase) + embedding Hugging Face
+- TTS: Orpheus English (hannah) untuk English, Orpheus Arabic Saudi (noura) untuk Indonesia
+- Text-to-image: Pollinations.ai GPT Image 2 (gratis, tanpa API key)
+- Admin: hanya email tertentu yang bisa akses /admin (diatur di middleware)
 
 ## Known Issues
 - Next.js 16 warning "middleware convention is deprecated, use proxy instead" — aman diabaikan
 - Groq free tier TPM limit ketat (8000 TPM untuk qwen) — gambar harus dikompres
+- Orpheus TTS rate limit: jangan klik Listen terlalu cepat (tunggu 10-15 detik)
 
-## Next Steps (FASE 4)
-1. Text-to-speech (Web Speech API, tombol play per pesan AI)
-2. Voice input (Whisper Large v3 via Groq)
-3. Toggle bahasa ID/EN (lib/i18n.ts)
-4. Responsive mobile
-5. Manajemen whitelist (admin page: tambah/hapus email)
+## Masa Depan (Backlog)
+- RAG: pgvector + embedding Hugging Face untuk Q&A dokumen spesifik
+- Regenerasi jawaban, edit pesan
+- Tema gelap/terang
 
 ## Untuk AI Assistant Baru
 Jika chat sebelumnya hilang: baca README.md, ROADMAP.md,
-docs/design-decisions.md, lalu lanjutkan dari "Next Steps (FASE 4)" di atas.
+docs/design-decisions.md, lalu lanjutkan dari "Masa Depan (Backlog)" di atas.

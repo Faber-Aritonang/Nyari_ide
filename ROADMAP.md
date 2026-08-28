@@ -56,8 +56,8 @@
 - [x] Upload gambar → vision (compressed otomatis 512x512 JPEG 70%)
 - [x] Upload file teks → context injection (max 8000 chars)
 - [x] Upload PDF → extract teks via pdf.js client-side (max 10 halaman)
-- [ ] Text-to-speech (Web Speech API, tombol play per pesan AI)
-- [ ] Voice input (Whisper via Groq)
+- [x] Text-to-speech (Groq Orpheus — English + Arabic Saudi)
+- [x] Voice input (Whisper Large v3 Turbo via Groq)
 ### Milestone 3.1 — Model Selector
 - [x] AVAILABLE_MODELS di lib/groq.ts (daftar model untuk UI + validasi server)
 - [x] API route GET /api/models
@@ -92,16 +92,53 @@
 - [x] Update PROJECT_CONTEXT.md
 ✅ MILESTONE 4: multimodal lengkap ✅
 
-## FASE 4 — Polesan ⬜
-- [ ] Text-to-speech (Web Speech API, tombol play per pesan AI)
-- [ ] Voice input (Whisper Large v3 via Groq)
-- [ ] Toggle bahasa ID/EN (lib/i18n.ts)
-- [ ] Responsive mobile
-- [ ] Manajemen whitelist (page admin: tambah/hapus email)
-- [ ] Error handling & loading states
-- [ ] Testing manual seluruh flow
-- [ ] Update dokumentasi final
-✅ MILESTONE 5: v1.0 rilis!
+## FASE 4 — Polesan ✅
+- [x] Text-to-speech (Groq Orpheus — English + Arabic Saudi untuk Indonesia)
+- [x] Voice input (Whisper Large v3 Turbo via Groq)
+- [x] Toggle bahasa ID/EN (lib/i18n.ts, persist localStorage)
+- [x] Responsive mobile (hamburger menu, overlay sidebar)
+- [x] Manajemen whitelist (admin page: /admin — tambah/hapus email)
+- [x] Text-to-image generation (Pollinations.ai — GPT Image 2)
+- [x] Voice selector untuk TTS (pilih suara dari dropdown)
+- [x] Error handling & loading states
+### Milestone 4.1 — TTS (Text-to-Speech)
+- [x] Groq Orpheus TTS integration
+- [x] Voice selector dropdown per pesan AI
+- [x] Auto-detect bahasa: English → Orpheus English (hannah), Indonesia → Orpheus Arabic Saudi (noura)
+- [x] API route POST /api/tts
+- [x] Audio playback: play/stop controls
+### Milestone 4.2 — Voice Input (STT)
+- [x] MediaRecorder API untuk rekam audio
+- [x] whisper-large-v3-turbo (cepat, ~500ms)
+- [x] API route POST /api/transcribe
+- [x] Toggle start/stop recording
+- [x] Loading indicator saat transkripsi
+### Milestone 4.3 — Text-to-Image Generation
+- [x] Pollinations.ai integration (GPT Image 2, gratis)
+- [x] Mode toggle 🎨 di input area
+- [x] Generate gambar dari prompt
+- [x] Tampilkan gambar hasil generate di chat
+- [x] Tombol download untuk gambar
+- [x] Opsi ukuran: 512×512, 768×768, 1024×1024
+### Milestone 4.4 — Bilingual & Mobile
+- [x] lib/i18n.ts: semua string UI dalam ID & EN
+- [x] Toggle bahasa di sidebar
+- [x] Responsive layout: sidebar collapsible di mobile
+- [x] Hamburger menu + overlay untuk mobile
+### Milestone 4.5 — Admin Whitelist
+- [x] API route GET/POST/DELETE /api/admin/whitelist
+- [x] Halaman /admin — tabel email + form tambah + tombol hapus
+- [x] Middleware proteksi /admin (hanya email tertentu)
+### Definition of Done (FASE 4)
+- [x] TTS suara natural (Orpheus) untuk English & Indonesia
+- [x] Voice input berfungsi dengan baik
+- [x] Text-to-image menghasilkan gambar bagus
+- [x] Toggle bahasa berfungsi di seluruh UI
+- [x] Responsive di mobile & desktop
+- [x] Admin bisa tambah/hapus whitelist
+- [x] Deploy ke Vercel, tes dari URL produksi
+- [x] Update PROJECT_CONTEXT.md
+✅ MILESTONE 5: v1.0 rilis! ✅
 
 ## Masa Depan (backlog)
 - RAG: pgvector + embedding HF untuk Q&A dokumen spesifik
