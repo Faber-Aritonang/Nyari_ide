@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { downloadImage } from "@/lib/image-gen";
 import { t } from "@/lib/i18n";
@@ -15,46 +15,75 @@ export interface Message {
 export default function ChatMessage({ message }: { message: Message }) {
   const isUser = message.role === "user";
   const [speaking, setSpeaking] = useState(false);
+  const [loadingAudio, setLoadingAudio] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Text-to-Speech using Web Speech API
-  function handleTTS() {
-    if (!("speechSynthesis" in window)) {
-      alert(t("ttsNotSupported"));
-      return;
-    }
-
+  // Text-to-Speech using Groq Orpheus (natural voice)
+  async function handleTTS() {
     // Jika sedang berbicara, hentikan
-    if (speaking) {
-      window.speechSynthesis.cancel();
+    if (speaking && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
       setSpeaking(false);
       return;
     }
 
     // Bersihkan markdown untuk TTS
     const cleanText = message.content
-      .replace(/```[\s\S]*?```/g, " kode ") // strip code blocks
+      .replace(/```[\s\S]*?```/g, " ") // strip code blocks
       .replace(/`[^`]+`/g, "") // strip inline code
       .replace(/[#*_~\[\]()]/g, "") // strip markdown symbols
       .replace(/\n+/g, ". ") // newlines jadi jeda
+      .replace(/\s+/g, " ") // collapse whitespace
       .trim();
 
     if (!cleanText) return;
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = "id-ID"; // Default bahasa Indonesia
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
+    try {
+      setLoadingAudio(true);
 
-    // Cari voice Bahasa Indonesia jika ada
-    const voices = window.speechSynthesis.getVoices();
-    const idVoice = voices.find((v) => v.lang.startsWith("id"));
-    if (idVoice) utterance.voice = idVoice;
+      // Fetch audio dari Orpheus TTS
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: cleanText, voice: "hannah" }),
+      });
 
-    utterance.onstart = () => setSpeaking(true);
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Gagal generate suara." }));
+        alert(err.error || "Gagal generate suara.");
+        setLoadingAudio(false);
+        return;
+      }
 
-    window.speechSynthesis.speak(utterance);
+      // Convert WAV ke blob dan play
+      const audioBlob = await res.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.onplay = () => {
+        setSpeaking(true);
+        setLoadingAudio(false);
+      };
+      audio.onended = () => {
+        setSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
+      audio.onerror = () => {
+        setSpeaking(false);
+        setLoadingAudio(false);
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
+
+      await audio.play();
+    } catch {
+      setSpeaking(false);
+      setLoadingAudio(false);
+    }
   }
 
   return (
@@ -91,7 +120,7 @@ export default function ChatMessage({ message }: { message: Message }) {
               }
               className="mt-2 text-xs text-zinc-400 hover:text-white transition-colors"
             >
-              ⬇ Download gambar
+              {t("downloadImage")}
             </button>
           </div>
         )}
@@ -125,18 +154,25 @@ export default function ChatMessage({ message }: { message: Message }) {
             </ReactMarkdown>
           </div>
         )}
-        {/* TTS button untuk pesan assistant */}
+        {/* TTS button untuk pesan assistant (Orpheus) */}
         {!isUser && message.content && !message.generated_image_url && (
           <button
             onClick={handleTTS}
+            disabled={loadingAudio}
             className={`mt-2 text-xs transition-colors ${
-              speaking
-                ? "text-red-400 hover:text-red-300"
-                : "text-zinc-500 hover:text-zinc-300"
+              loadingAudio
+                ? "text-zinc-500 animate-pulse"
+                : speaking
+                  ? "text-red-400 hover:text-red-300"
+                  : "text-zinc-500 hover:text-zinc-300"
             }`}
-            title={speaking ? "Hentikan suara" : "Dengarkan jawaban"}
+            title={speaking ? t("stop") : loadingAudio ? "Loading..." : t("listen")}
           >
-            {speaking ? `⏹ ${t("stop")}` : `🔊 ${t("listen")}`}
+            {loadingAudio
+              ? "🔊 Loading..."
+              : speaking
+                ? `⏹ ${t("stop")}`
+                : `🔊 ${t("listen")}`}
           </button>
         )}
       </div>
