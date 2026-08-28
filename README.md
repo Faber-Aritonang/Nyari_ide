@@ -58,7 +58,26 @@ Semua API key tersimpan **hanya di sisi server** — tidak pernah terekspos di b
 
 ## 📊 Status Proyek
 
-> **v1.0 RILIS!** ✅ Semua fase sudah selesai.
+> **v1.0 RILIS!** ✅ Semua fase sudah selesai dan **berhasil berjalan dengan baik**.
+
+Aplikasi ini sudah bisa dicoba langsung di: **[nyari-ide.vercel.app](https://nyari-ide.vercel.app)**
+
+### 🧪 Mau Coba?
+
+Aplikasi ini bersifat **private & terbatas** (whitelist maks 10 akun). Bagi yang ingin mencoba, silakan kirim permohonan akses test ke email admin:
+
+> 📧 **faber.aritonang@gmail.com**
+
+Cukup kirim email dengan subject: **"Permohonan Akses Test Nyari_ide"**
+
+Isi email:
+- Nama lengkap
+- Email yang ingin didaftarkan
+- Keperluan / alasan ingin mencoba
+
+Admin akan mendaftarkan email Anda ke whitelist, setelah itu Anda bisa langsung login dan mencoba semua fitur yang tersedia.
+
+---
 
 Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 
