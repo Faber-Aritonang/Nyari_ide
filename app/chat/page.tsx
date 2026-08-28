@@ -426,6 +426,213 @@ export default function ChatPage() {
       e.preventDefault();
       sendMessage();
     }
+    // Ctrl+Shift+R = regenerate last message
+    if (e.key === "r" && e.ctrlKey && e.shiftKey) {
+      e.preventDefault();
+      handleRegenerate();
+    }
+    // Ctrl+E = export chat
+    if (e.key === "e" && e.ctrlKey && !e.shiftKey) {
+      e.preventDefault();
+      exportChat();
+    }
+  }
+
+  // Regenerate last AI response
+  async function handleRegenerate() {
+    if (sending || !activeConvId || messages.length < 2) return;
+
+    // Find last user message
+    const lastUserIdx = [...messages].findLastIndex((m) => m.role === "user");
+    if (lastUserIdx === -1) return;
+
+    const lastUserMsg = messages[lastUserIdx];
+
+    // Remove last AI response and set loading
+    setMessages((prev) => prev.slice(0, -1));
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+    setSending(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: activeConvId,
+          message: lastUserMsg.content,
+          model: selectedModel,
+          imageUrl: lastUserMsg.image_url,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: t("networkError") }));
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: `❌ ${err.error || t("networkError")}`,
+            isError: true,
+          };
+          return updated;
+        });
+        setSending(false);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) { setSending(false); return; }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+          const data = trimmed.slice(6);
+          if (data === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.content) {
+              setMessages((prev) => {
+                const updated = [...prev];
+                const lastIdx = updated.length - 1;
+                updated[lastIdx] = {
+                  role: "assistant",
+                  content: (updated[lastIdx]?.content ?? "") + parsed.content,
+                };
+                return updated;
+              });
+            }
+          } catch { /* skip */ }
+        }
+      }
+    } catch {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content: `❌ ${t("networkError")}`,
+          isError: true,
+        };
+        return updated;
+      });
+    }
+    setSending(false);
+  }
+
+  // Edit user message & regenerate
+  async function handleEditMessage(idx: number, newContent: string) {
+    if (sending || !activeConvId) return;
+
+    // Update the user message and remove everything after it
+    setMessages((prev) => {
+      const updated = prev.slice(0, idx + 1);
+      updated[idx] = { ...updated[idx], content: newContent };
+      return updated;
+    });
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+    setSending(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: activeConvId,
+          message: newContent,
+          model: selectedModel,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: t("networkError") }));
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: `❌ ${err.error || t("networkError")}`,
+            isError: true,
+          };
+          return updated;
+        });
+        setSending(false);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) { setSending(false); return; }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+          const data = trimmed.slice(6);
+          if (data === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.content) {
+              setMessages((prev) => {
+                const updated = [...prev];
+                const lastIdx = updated.length - 1;
+                updated[lastIdx] = {
+                  role: "assistant",
+                  content: (updated[lastIdx]?.content ?? "") + parsed.content,
+                };
+                return updated;
+              });
+            }
+          } catch { /* skip */ }
+        }
+      }
+    } catch {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content: `❌ ${t("networkError")}`,
+          isError: true,
+        };
+        return updated;
+      });
+    }
+    setSending(false);
+  }
+
+  // Export chat as Markdown
+  function exportChat() {
+    if (messages.length === 0) return;
+
+    const convTitle = conversations.find((c) => c.id === activeConvId)?.title || "Chat";
+    let md = `# ${convTitle}\n\n`;
+    md += `> Exported from Nyari_ide — ${new Date().toLocaleDateString("id-ID")}\n\n`;
+
+    for (const msg of messages) {
+      const role = msg.role === "user" ? "**You**" : "**AI**";
+      md += `### ${role}\n\n${msg.content}\n\n---\n\n`;
+    }
+
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${convTitle.replace(/[^a-z0-9]/gi, "_").slice(0, 50)}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   async function handleLogout() {
@@ -529,6 +736,15 @@ export default function ChatPage() {
               ⚙️ Admin
             </button>
           )}
+          {activeConvId && messages.length > 0 && (
+            <button
+              onClick={exportChat}
+              className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
+              title={t("exportMd")}
+            >
+              📥 {t("exportChat")}
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors"
@@ -577,7 +793,12 @@ export default function ChatPage() {
                 )}
 
                 {messages.map((msg, i) => (
-                  <ChatMessage key={i} message={msg} />
+                  <ChatMessage
+                    key={i}
+                    message={msg}
+                    onRetry={!sending && msg.role === "assistant" && i === messages.length - 1 ? handleRegenerate : undefined}
+                    onEdit={msg.role === "user" && !sending ? (newContent) => handleEditMessage(i, newContent) : undefined}
+                  />
                 ))}
                 <div ref={messagesEndRef} />
               </div>

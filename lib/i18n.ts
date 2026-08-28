@@ -67,6 +67,16 @@ const strings = {
     fileTooLarge: "File terlalu besar.",
     downloadImage: "⬇ Download gambar",
 
+    // Actions v1.1
+    copyMessage: "Salin pesan",
+    copied: "Tersalin!",
+    editMessage: "Edit pesan",
+    retryMessage: "Coba lagi",
+    regenerate: "Generate ulang",
+    exportChat: "Export chat",
+    exportMd: "Download sebagai Markdown",
+    copiedToClipboard: "Pesan tersalin ke clipboard!",
+
     // Errors
     networkError: "Terjadi kesalahan jaringan. Coba lagi.",
     rateLimit: "Kuota AI habis (rate limit). Tunggu beberapa saat.",
@@ -135,6 +145,16 @@ const strings = {
     fileFormatError: "Unsupported file format. Use text or PDF file.",
     fileTooLarge: "File too large.",
     downloadImage: "⬇ Download image",
+
+    // Actions v1.1
+    copyMessage: "Copy message",
+    copied: "Copied!",
+    editMessage: "Edit message",
+    retryMessage: "Retry",
+    regenerate: "Regenerate",
+    exportChat: "Export chat",
+    exportMd: "Download as Markdown",
+    copiedToClipboard: "Message copied to clipboard!",
 
     // Errors
     networkError: "Network error. Please try again.",

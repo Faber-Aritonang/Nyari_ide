@@ -10,6 +10,7 @@ export interface Message {
   content: string;
   image_url?: string | null;
   generated_image_url?: string | null;
+  isError?: boolean;
 }
 
 const EN_VOICES = ["hannah", "diana", "autumn", "austin", "daniel", "troy"];
@@ -49,18 +50,53 @@ function cleanText(text: string): string {
     .slice(0, 2000);
 }
 
-export default function ChatMessage({ message }: { message: Message }) {
+interface ChatMessageProps {
+  message: Message;
+  onRetry?: () => void;
+  onEdit?: (newContent: string) => void;
+}
+
+export default function ChatMessage({ message, onRetry, onEdit }: ChatMessageProps) {
   const isUser = message.role === "user";
   const [speaking, setSpeaking] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [voice, setVoice] = useState("hannah");
+  const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(message.content);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const textLang = detectLang(cleanText(message.content));
   const voices = textLang === "en" ? EN_VOICES : ID_VOICES;
 
+  // Copy message
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+      const textarea = document.createElement("textarea");
+      textarea.value = message.content;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [message.content]);
+
+  // Edit message
+  const handleSaveEdit = useCallback(() => {
+    if (editValue.trim() && onEdit) {
+      onEdit(editValue.trim());
+    }
+    setEditing(false);
+  }, [editValue, onEdit]);
+
   const handleTTS = useCallback(async () => {
-    // Stop jika sedang play
     if (speaking && audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -74,7 +110,6 @@ export default function ChatMessage({ message }: { message: Message }) {
     setLoadingAudio(true);
 
     try {
-      // Fetch audio dari /api/tts
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,7 +125,6 @@ export default function ChatMessage({ message }: { message: Message }) {
       const buf = await res.arrayBuffer();
       console.log("[TTS] Audio received:", buf.byteLength, "bytes");
 
-      // Convert WAV ke Blob dan play
       const blob = new Blob([buf], { type: "audio/wav" });
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
@@ -101,7 +135,6 @@ export default function ChatMessage({ message }: { message: Message }) {
       audio.onended = () => { setSpeaking(false); URL.revokeObjectURL(url); audioRef.current = null; console.log("[TTS] Ended"); };
       audio.onerror = (e) => { setSpeaking(false); setLoadingAudio(false); URL.revokeObjectURL(url); audioRef.current = null; console.error("[TTS] Audio error:", e); };
 
-      // Play
       const playPromise = audio.play();
       if (playPromise) {
         await playPromise;
@@ -113,7 +146,7 @@ export default function ChatMessage({ message }: { message: Message }) {
   }, [speaking, message.content, voice]);
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4 group/msg`}>
       <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${isUser ? "bg-blue-600 text-white" : "bg-surface text-foreground border border-border-theme"}`}>
         {message.image_url && (
           <div className="mb-2">
@@ -129,7 +162,39 @@ export default function ChatMessage({ message }: { message: Message }) {
           </div>
         )}
         {isUser ? (
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          editing ? (
+            <div>
+              <textarea
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="w-full bg-white/20 border border-white/30 rounded-lg px-3 py-2 text-sm text-white resize-none focus:outline-none"
+                rows={3}
+                autoFocus
+              />
+              <div className="flex gap-2 mt-2">
+                <button onClick={handleSaveEdit} className="text-xs bg-white/20 hover:bg-white/30 rounded px-2 py-1 transition-colors">
+                  ✓ Save
+                </button>
+                <button onClick={() => setEditing(false)} className="text-xs bg-white/10 hover:bg-white/20 rounded px-2 py-1 transition-colors">
+                  ✕ Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="whitespace-pre-wrap">{message.content}</p>
+          )
+        ) : message.isError ? (
+          <div>
+            <p className="whitespace-pre-wrap text-red-400">{message.content}</p>
+            {onRetry && (
+              <button
+                onClick={onRetry}
+                className="mt-2 text-xs bg-red-900/30 hover:bg-red-900/50 text-red-300 rounded px-2 py-1 transition-colors"
+              >
+                🔄 {t("retryMessage")}
+              </button>
+            )}
+          </div>
         ) : (
           <div className="prose prose-invert prose-sm max-w-none">
             <ReactMarkdown
@@ -145,9 +210,31 @@ export default function ChatMessage({ message }: { message: Message }) {
             </ReactMarkdown>
           </div>
         )}
-        {/* TTS controls */}
-        {!isUser && message.content && !message.generated_image_url && (
-          <div className="mt-2 flex items-center gap-2">
+
+        {/* Action buttons for assistant messages */}
+        {!isUser && message.content && !message.isError && !message.generated_image_url && (
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            {/* Copy button */}
+            <button
+              onClick={handleCopy}
+              className="text-xs text-muted hover:text-muted-light transition-colors"
+              title={t("copyMessage")}
+            >
+              {copied ? `✓ ${t("copied")}` : "📋"}
+            </button>
+
+            {/* Regenerate button */}
+            {onRetry && (
+              <button
+                onClick={onRetry}
+                className="text-xs text-muted hover:text-muted-light transition-colors"
+                title={t("regenerate")}
+              >
+                🔄
+              </button>
+            )}
+
+            {/* TTS voice selector + play */}
             <select
               value={voice}
               onChange={(e) => setVoice(e.target.value)}
@@ -163,6 +250,19 @@ export default function ChatMessage({ message }: { message: Message }) {
               className={`text-xs transition-colors ${loadingAudio ? "text-muted animate-pulse" : speaking ? "text-red-400" : "text-muted hover:text-muted-light"}`}
             >
               {loadingAudio ? "🔊..." : speaking ? `⏹ ${t("stop")}` : `🔊 ${t("listen")}`}
+            </button>
+          </div>
+        )}
+
+        {/* Edit button for user messages */}
+        {isUser && !editing && onEdit && (
+          <div className="mt-1 flex justify-end">
+            <button
+              onClick={() => setEditing(true)}
+              className="text-xs text-white/50 hover:text-white/80 transition-colors opacity-0 group-hover/msg:opacity-100"
+              title={t("editMessage")}
+            >
+              ✏️
             </button>
           </div>
         )}
