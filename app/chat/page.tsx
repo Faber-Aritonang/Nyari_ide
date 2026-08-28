@@ -7,7 +7,7 @@ import ChatMessage, { type Message } from "@/app/components/ChatMessage";
 import { compressImage } from "@/lib/image-utils";
 import { readTextFile, extractPdfText } from "@/lib/file-utils";
 import { generateImageUrl } from "@/lib/image-gen";
-import { startRecording, stopRecording, stopCurrentRecording } from "@/lib/voice-utils";
+import { startRecording, stopRecording } from "@/lib/voice-utils";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
 
 interface Conversation {
@@ -42,8 +42,8 @@ export default function ChatPage() {
   } | null>(null);
   const [imageGenMode, setImageGenMode] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [mediaStopFn, setMediaStopFn] = useState<(() => Promise<Blob>) | null>(null);
   const [lang, setLangState] = useState<Lang>(getLang());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -57,7 +57,6 @@ export default function ChatPage() {
       }
       setEmail(data.user.email ?? "");
 
-      // Fetch conversations
       const res = await fetch("/api/conversations");
       if (res.ok) {
         const convs = await res.json();
@@ -67,7 +66,6 @@ export default function ChatPage() {
         }
       }
 
-      // Fetch available models
       const modelsRes = await fetch("/api/models");
       if (modelsRes.ok) {
         const modelList = await modelsRes.json();
@@ -111,6 +109,19 @@ export default function ChatPage() {
     }
   }, [input]);
 
+  // Toggle bahasa
+  function toggleLang() {
+    const newLang = lang === "id" ? "en" : "id";
+    setLang(newLang);
+    setLangState(newLang);
+  }
+
+  // Select conversation (mobile: close sidebar)
+  function selectConversation(id: string) {
+    setActiveConvId(id);
+    setSidebarOpen(false);
+  }
+
   // Create new conversation
   async function createConversation() {
     const res = await fetch("/api/conversations", {
@@ -124,6 +135,7 @@ export default function ChatPage() {
       setConversations((prev) => [conv, ...prev]);
       setActiveConvId(conv.id);
       setMessages([]);
+      setSidebarOpen(false);
     }
   }
 
@@ -144,14 +156,13 @@ export default function ChatPage() {
     }
   }
 
-  // Handle file (teks/PDF) selection
+  // Handle file selection
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       let content: string;
-
       if (file.type === "application/pdf") {
         content = await extractPdfText(file);
       } else if (
@@ -160,15 +171,13 @@ export default function ChatPage() {
       ) {
         content = await readTextFile(file);
       } else {
-        alert("Format file tidak didukung. Gunakan file teks atau PDF.");
+        alert(t("fileFormatError"));
         return;
       }
-
       setSelectedFile({ name: file.name, content });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Gagal membaca file.");
+      alert(err instanceof Error ? err.message : t("fileTooLarge"));
     }
-    // Reset input agar bisa upload file yang sama lagi
     e.target.value = "";
   }
 
@@ -177,16 +186,13 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validasi format
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      alert("Format gambar tidak didukung. Gunakan JPG, PNG, atau WebP.");
+      alert(t("imageFormatError"));
       return;
     }
-
-    // Validasi ukuran (maks 4MB)
     if (file.size > 4 * 1024 * 1024) {
-      alert("Ukuran gambar maksimal 4MB.");
+      alert(t("imageSizeError"));
       return;
     }
 
@@ -194,55 +200,47 @@ export default function ChatPage() {
       const reader = new FileReader();
       reader.onload = async () => {
         try {
-          const original = reader.result as string;
-          const compressed = await compressImage(original);
+          const compressed = await compressImage(reader.result as string);
           setSelectedImage(compressed);
         } catch {
-          // Fallback: pakai original jika compress gagal
           setSelectedImage(reader.result as string);
         }
       };
       reader.readAsDataURL(file);
     } catch {
-      alert("Gagal membaca file gambar.");
+      alert(t("voiceError"));
     }
   }
 
-  // Toggle bahasa
-  function toggleLang() {
-    const newLang = lang === "id" ? "en" : "id";
-    setLang(newLang);
-    setLangState(newLang);
-  }
-
-  // Voice input: start/stop recording → transcribe via Whisper
+  // Voice input
   async function handleVoiceInput() {
     if (recording) {
-      // STOP recording
       setRecording(false);
       const blob = await stopRecording();
-      if (!blob || blob.size < 100) {
-        // Audio terlalu kecil, abaikan
-        return;
-      }
+      if (!blob || blob.size < 100) return;
       await transcribeAudio(blob);
       return;
     }
 
-    // START recording
     try {
       const { stop } = await startRecording();
-      setMediaStopFn(() => stop);
       setRecording(true);
+      // Auto stop after 30s
+      const timer = setTimeout(async () => {
+        setRecording(false);
+        const blob = await stop();
+        if (blob && blob.size >= 100) await transcribeAudio(blob);
+      }, 30000);
+      // Store timer for cleanup
+      void timer;
     } catch (err) {
       alert(err instanceof Error ? err.message : t("voiceError"));
     }
   }
 
-  // Transcribe audio via Whisper
   async function transcribeAudio(audioBlob: Blob) {
     try {
-      setSending(true); // Tampilkan loading
+      setSending(true);
       const formData = new FormData();
       const ext = audioBlob.type.includes("webm") ? "webm" : audioBlob.type.includes("mp4") ? "mp4" : "ogg";
       formData.append("audio", audioBlob, `recording.${ext}`);
@@ -268,7 +266,7 @@ export default function ChatPage() {
     setSending(false);
   }
 
-  // Generate image via Pollinations.ai
+  // Generate image
   async function handleGenerateImage() {
     if (!input.trim() || sending || !activeConvId) return;
 
@@ -277,23 +275,19 @@ export default function ChatPage() {
     setSending(true);
     setImageGenMode(false);
 
-    // Add user message
     setMessages((prev) => [...prev, { role: "user", content: `[Generate Gambar] ${prompt}` }]);
-    // Add loading placeholder
     setMessages((prev) => [...prev, { role: "assistant", content: `🎨 ${t("generating")}` }]);
 
     try {
       const url = generateImageUrl(prompt, "1024");
-      // Tunggu gambar load
       const img = new Image();
       img.src = url;
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
         img.onerror = () => reject(new Error("Gagal generate gambar"));
-        setTimeout(() => reject(new Error("Timeout: gambar terlalu lama")), 60000);
+        setTimeout(() => reject(new Error("Timeout")), 60000);
       });
 
-      // Replace loading dengan gambar
       setMessages((prev) => {
         const updated = [...prev];
         const lastIdx = updated.length - 1;
@@ -320,7 +314,6 @@ export default function ChatPage() {
 
   // Send message
   async function sendMessage() {
-    // Jika image gen mode, jalankan generate
     if (imageGenMode && input.trim()) {
       await handleGenerateImage();
       return;
@@ -328,7 +321,7 @@ export default function ChatPage() {
 
     if ((!input.trim() && !selectedImage) || sending || !activeConvId) return;
 
-    const userMessage = input.trim() || (selectedFile ? "(file: " + selectedFile.name + ")" : "(gambar)");
+    const userMessage = input.trim() || (selectedFile ? "(file)" : "(image)");
     const imageToSend = selectedImage;
     const fileToSend = selectedFile;
     setInput("");
@@ -336,16 +329,12 @@ export default function ChatPage() {
     setSelectedFile(null);
     setSending(true);
 
-    // Add user message to UI immediately
     setMessages((prev) => [
       ...prev,
       { role: "user", content: userMessage, image_url: imageToSend },
     ]);
-
-    // Add empty assistant message placeholder
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
-    // Update conversation title with first message (if still default)
     const currentConv = conversations.find((c) => c.id === activeConvId);
     if (currentConv && currentConv.title === "Percakapan baru") {
       const newTitle = userMessage.slice(0, 50);
@@ -368,11 +357,10 @@ export default function ChatPage() {
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: "Gagal mengirim pesan." }));
+        const err = await response.json().catch(() => ({ error: t("networkError") }));
         setMessages((prev) => {
           const updated = [...prev];
-          const lastIdx = updated.length - 1;
-          updated[lastIdx] = {
+          updated[updated.length - 1] = {
             role: "assistant",
             content: `❌ ${err.error || t("networkError")}`,
           };
@@ -382,12 +370,8 @@ export default function ChatPage() {
         return;
       }
 
-      // Process streaming response
       const reader = response.body?.getReader();
-      if (!reader) {
-        setSending(false);
-        return;
-      }
+      if (!reader) { setSending(false); return; }
 
       const decoder = new TextDecoder();
       let buffer = "";
@@ -404,7 +388,6 @@ export default function ChatPage() {
           const trimmed = line.trim();
           if (!trimmed || !trimmed.startsWith("data: ")) continue;
           const data = trimmed.slice(6);
-
           if (data === "[DONE]") break;
 
           try {
@@ -420,27 +403,22 @@ export default function ChatPage() {
                 return updated;
               });
             }
-          } catch {
-            // skip
-          }
+          } catch { /* skip */ }
         }
       }
     } catch {
       setMessages((prev) => {
         const updated = [...prev];
-        const lastIdx = updated.length - 1;
-        updated[lastIdx] = {
+        updated[updated.length - 1] = {
           role: "assistant",
           content: `❌ ${t("networkError")}`,
         };
         return updated;
       });
     }
-
     setSending(false);
   }
 
-  // Handle Enter key
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -448,7 +426,6 @@ export default function ChatPage() {
     }
   }
 
-  // Logout
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push("/login");
@@ -456,8 +433,20 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+      <aside
+        className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col transition-transform duration-200 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
         {/* Header */}
         <div className="p-4 border-b border-zinc-800">
           <div className="flex items-center justify-between">
@@ -465,7 +454,6 @@ export default function ChatPage() {
             <button
               onClick={toggleLang}
               className="text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded px-2 py-1 transition-colors"
-              title="Toggle ID/EN"
             >
               {lang === "id" ? "EN" : "ID"}
             </button>
@@ -492,7 +480,7 @@ export default function ChatPage() {
                   ? "bg-zinc-800 text-white"
                   : "hover:bg-zinc-800/50 text-zinc-400"
               }`}
-              onClick={() => setActiveConvId(conv.id)}
+              onClick={() => selectConversation(conv.id)}
             >
               <span className="text-sm truncate flex-1">{conv.title}</span>
               <button
@@ -526,17 +514,30 @@ export default function ChatPage() {
             onClick={handleLogout}
             className="w-full rounded-lg bg-zinc-800 hover:bg-zinc-700 py-2 text-xs transition-colors"
           >
-            Logout
+            {t("logout")}
           </button>
         </div>
       </aside>
 
       {/* Main chat area */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-w-0">
+        {/* Mobile header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800 md:hidden">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="text-zinc-400 hover:text-white text-xl"
+          >
+            ☰
+          </button>
+          <span className="text-sm font-medium truncate">
+            {conversations.find((c) => c.id === activeConvId)?.title || t("appName")}
+          </span>
+        </div>
+
         {activeConvId ? (
           <>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-6">
+            <div className="flex-1 overflow-y-auto px-3 py-4 md:px-4 md:py-6">
               <div className="max-w-3xl mx-auto">
                 {loadingHistory && (
                   <p className="text-center text-zinc-500 text-sm">
@@ -545,13 +546,13 @@ export default function ChatPage() {
                 )}
 
                 {messages.length === 0 && !loadingHistory && (
-                  <div className="text-center text-zinc-500 mt-20">
-                    <p className="text-4xl mb-4">🧠</p>
-                    <p className="text-lg font-medium mb-2">
-                      {t("appName")} 🧠💡
+                  <div className="text-center text-zinc-500 mt-10 md:mt-20">
+                    <p className="text-3xl md:text-4xl mb-4">🧠💡</p>
+                    <p className="text-base md:text-lg font-medium mb-2">
+                      {t("appName")}
                     </p>
                     <p className="text-sm">
-                      Kirim pesan untuk memulai chatting dengan Nyari_ide.
+                      {t("startChatting")}
                     </p>
                   </div>
                 )}
@@ -564,108 +565,70 @@ export default function ChatPage() {
             </div>
 
             {/* Input area */}
-            <div className="border-t border-zinc-800 p-4">
+            <div className="border-t border-zinc-800 p-3 md:p-4">
               <div className="max-w-3xl mx-auto">
                 {/* Model selector */}
                 {models.length > 1 && (
-                  <div className="mb-3 flex items-center gap-2">
+                  <div className="mb-2 md:mb-3 flex items-center gap-2">
                     <label className="text-xs text-zinc-500">Model:</label>
                     <select
                       value={selectedModel}
                       onChange={(e) => setSelectedModel(e.target.value)}
-                      className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-blue-500"
+                      className="bg-zinc-800 border border-zinc-700 rounded-lg px-2 md:px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-blue-500"
                     >
                       {models.map((m) => (
-                        <option key={m.id} value={m.id} title={m.description}>
-                          {m.label}
-                        </option>
+                        <option key={m.id} value={m.id}>{m.label}</option>
                       ))}
                     </select>
-                    <span className="text-xs text-zinc-600">
+                    <span className="text-xs text-zinc-600 hidden sm:inline">
                       {models.find((m) => m.id === selectedModel)?.description}
                     </span>
                   </div>
                 )}
+
                 {/* Image preview */}
                 {selectedImage && (
-                  <div className="mb-3 relative inline-block">
-                    <img
-                      src={selectedImage}
-                      alt="Preview"
-                      className="h-24 rounded-lg border border-zinc-700"
-                    />
+                  <div className="mb-2 md:mb-3 relative inline-block">
+                    <img src={selectedImage} alt="Preview" className="h-20 md:h-24 rounded-lg border border-zinc-700" />
                     <button
                       onClick={() => setSelectedImage(null)}
                       className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                    >
-                      ✕
-                    </button>
-                    <p className="text-xs text-zinc-500 mt-1">Gambar akan di-compress otomatis ke JPEG</p>
+                    >✕</button>
                   </div>
                 )}
+
                 {/* File preview */}
                 {selectedFile && (
-                  <div className="mb-3 flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2">
+                  <div className="mb-2 md:mb-3 flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2">
                     <span className="text-sm">📄</span>
-                    <span className="text-xs text-zinc-300 flex-1 truncate">
-                      {selectedFile.name} ({(selectedFile.content.length / 1000).toFixed(1)}K chars)
-                    </span>
-                    <button
-                      onClick={() => setSelectedFile(null)}
-                      className="text-zinc-500 hover:text-red-400 text-xs"
-                    >
-                      ✕
-                    </button>
+                    <span className="text-xs text-zinc-300 flex-1 truncate">{selectedFile.name}</span>
+                    <button onClick={() => setSelectedFile(null)} className="text-zinc-500 hover:text-red-400 text-xs">✕</button>
                   </div>
                 )}
-                <div className="flex items-end gap-3">
+
+                <div className="flex items-end gap-2 md:gap-3">
                   {/* Upload buttons */}
-                  <div className="flex gap-1">
-                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors"                      title={t("uploadImage")}>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-2.5 md:px-3 py-2.5 md:py-3 text-sm cursor-pointer transition-colors" title={t("uploadImage")}>
                       🖼️
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={handleImageSelect}
-                        className="hidden"
-                      />
+                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} className="hidden" />
                     </label>
-                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors"                      title={t("uploadFile")}>
+                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-2.5 md:px-3 py-2.5 md:py-3 text-sm cursor-pointer transition-colors" title={t("uploadFile")}>
                       📎
-                      <input
-                        type="file"
-                        accept=".txt,.js,.ts,.py,.json,.md,.html,.css,.sql,.yaml,.yml,.xml,.csv,.log,.env,.config,.pdf,text/*"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
+                      <input type="file" accept=".txt,.js,.ts,.py,.json,.md,.html,.css,.sql,.yaml,.yml,.xml,.csv,.log,.env,.config,.pdf,text/*" onChange={handleFileSelect} className="hidden" />
                     </label>
                     <button
-                      onClick={() => {
-                        setImageGenMode(!imageGenMode);
-                        setSelectedImage(null);
-                        setSelectedFile(null);
-                      }}
-                      className={`rounded-xl border px-3 py-3 text-sm transition-colors ${
-                        imageGenMode
-                          ? "bg-purple-600 border-purple-500 text-white"
-                          : "bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
-                      }`}
-                      title="Generate gambar dari teks (GPT Image 2 via Pollinations.ai)"
-                    >
-                      🎨
-                    </button>
+                      onClick={() => { setImageGenMode(!imageGenMode); setSelectedImage(null); setSelectedFile(null); }}
+                      className={`rounded-xl border px-2.5 md:px-3 py-2.5 md:py-3 text-sm transition-colors ${imageGenMode ? "bg-purple-600 border-purple-500 text-white" : "bg-zinc-800 hover:bg-zinc-700 border-zinc-700"}`}
+                      title={t("imageGenMode")}
+                    >🎨</button>
                     <button
                       onClick={handleVoiceInput}
-                      className={`rounded-xl border px-3 py-3 text-sm transition-colors ${
-                        recording
-                          ? "bg-red-600 border-red-500 text-white animate-pulse"
-                          : "bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
-                      }`}
+                      className={`rounded-xl border px-2.5 md:px-3 py-2.5 md:py-3 text-sm transition-colors ${recording ? "bg-red-600 border-red-500 text-white animate-pulse" : "bg-zinc-800 hover:bg-zinc-700 border-zinc-700"}`}
                       title={recording ? t("recording") : t("voiceInput")}
-                    >
-                      {recording ? "⏹" : "🎤"}
-                    </button>
+                    >{recording ? "⏹" : "🎤"}</button>
                   </div>
+
                   <textarea
                     ref={textareaRef}
                     value={input}
@@ -673,16 +636,13 @@ export default function ChatPage() {
                     onKeyDown={handleKeyDown}
                     placeholder={imageGenMode ? t("typeImagePrompt") : t("typeMessage")}
                     rows={1}
-                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-blue-500 placeholder:text-zinc-500"
+                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-sm resize-none focus:outline-none focus:border-blue-500 placeholder:text-zinc-500 min-h-[42px]"
                   />
+
                   <button
                     onClick={sendMessage}
                     disabled={sending || !input.trim()}
-                    className={`rounded-xl disabled:opacity-50 px-4 py-3 text-sm font-medium transition-colors ${
-                      imageGenMode
-                        ? "bg-purple-600 hover:bg-purple-500"
-                        : "bg-blue-600 hover:bg-blue-500"
-                    }`}
+                    className={`rounded-xl disabled:opacity-50 px-3 md:px-4 py-2.5 md:py-3 text-sm font-medium transition-colors flex-shrink-0 ${imageGenMode ? "bg-purple-600 hover:bg-purple-500" : "bg-blue-600 hover:bg-blue-500"}`}
                   >
                     {sending ? "..." : imageGenMode ? t("generate") : t("send")}
                   </button>
@@ -691,13 +651,11 @@ export default function ChatPage() {
             </div>
           </>
         ) : (
-          /* No conversation selected */
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center p-4">
             <div className="text-center text-zinc-500">
-              <p className="text-4xl mb-4">🧠💡</p>                    <p className="text-lg font-medium mb-2">{t("appName")}</p>
-                    <p className="text-sm mb-6">
-                      {t("selectOrCreate")}
-                    </p>
+              <p className="text-3xl md:text-4xl mb-4">🧠💡</p>
+              <p className="text-base md:text-lg font-medium mb-2">{t("appName")}</p>
+              <p className="text-sm mb-6">{t("selectOrCreate")}</p>
               <button
                 onClick={createConversation}
                 className="rounded-lg bg-blue-600 hover:bg-blue-500 px-6 py-2.5 text-sm font-medium transition-colors"
