@@ -2,9 +2,9 @@
 // Semua model & parameter Groq dikelola di sini agar mudah diganti nanti.
 
 export const MODELS = {
-  main: "llama-3.3-70b-versatile",
-  fast: "llama-3.1-8b-instant",
-  vision: "llama-4-scout-17b-16e-instruct",
+  main: "qwen/qwen3.8-27b",
+  fast: "qwen/qwen3.8-27b",
+  vision: "qwen/qwen3.8-27b",
   whisper: "whisper-large-v3",
 } as const;
 
@@ -13,7 +13,7 @@ export type ModelId = (typeof MODELS)[keyof typeof MODELS];
 export const CHAT_CONFIG = {
   model: MODELS.main,
   temperature: 0.7,
-  max_tokens: 2048,
+  max_tokens: 4096,
 } as const;
 
 export const SYSTEM_PROMPT = `Kamu adalah Nyari_ide, asisten AI yang membantu dalam Bahasa Indonesia maupun English. 
