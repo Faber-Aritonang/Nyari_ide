@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { downloadImage } from "@/lib/image-gen";
 
@@ -12,6 +13,48 @@ export interface Message {
 
 export default function ChatMessage({ message }: { message: Message }) {
   const isUser = message.role === "user";
+  const [speaking, setSpeaking] = useState(false);
+
+  // Text-to-Speech using Web Speech API
+  function handleTTS() {
+    if (!("speechSynthesis" in window)) {
+      alert("Browser tidak mendukung text-to-speech.");
+      return;
+    }
+
+    // Jika sedang berbicara, hentikan
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+
+    // Bersihkan markdown untuk TTS
+    const cleanText = message.content
+      .replace(/```[\s\S]*?```/g, " kode ") // strip code blocks
+      .replace(/`[^`]+`/g, "") // strip inline code
+      .replace(/[#*_~\[\]()]/g, "") // strip markdown symbols
+      .replace(/\n+/g, ". ") // newlines jadi jeda
+      .trim();
+
+    if (!cleanText) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "id-ID"; // Default bahasa Indonesia
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    // Cari voice Bahasa Indonesia jika ada
+    const voices = window.speechSynthesis.getVoices();
+    const idVoice = voices.find((v) => v.lang.startsWith("id"));
+    if (idVoice) utterance.voice = idVoice;
+
+    utterance.onstart = () => setSpeaking(true);
+    utterance.onend = () => setSpeaking(false);
+    utterance.onerror = () => setSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  }
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
@@ -80,6 +123,20 @@ export default function ChatMessage({ message }: { message: Message }) {
               {message.content}
             </ReactMarkdown>
           </div>
+        )}
+        {/* TTS button untuk pesan assistant */}
+        {!isUser && message.content && !message.generated_image_url && (
+          <button
+            onClick={handleTTS}
+            className={`mt-2 text-xs transition-colors ${
+              speaking
+                ? "text-red-400 hover:text-red-300"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+            title={speaking ? "Hentikan suara" : "Dengarkan jawaban"}
+          >
+            {speaking ? "⏹ Stop" : "🔊 Dengarkan"}
+          </button>
         )}
       </div>
     </div>

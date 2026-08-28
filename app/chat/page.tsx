@@ -7,6 +7,7 @@ import ChatMessage, { type Message } from "@/app/components/ChatMessage";
 import { compressImage } from "@/lib/image-utils";
 import { readTextFile, extractPdfText } from "@/lib/file-utils";
 import { generateImageUrl } from "@/lib/image-gen";
+import { recordAudio } from "@/lib/voice-utils";
 
 interface Conversation {
   id: string;
@@ -39,6 +40,7 @@ export default function ChatPage() {
     content: string;
   } | null>(null);
   const [imageGenMode, setImageGenMode] = useState(false);
+  const [recording, setRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -201,6 +203,42 @@ export default function ChatPage() {
     } catch {
       alert("Gagal membaca file gambar.");
     }
+  }
+
+  // Voice input: rekam audio → transcribe via Whisper
+  async function handleVoiceInput() {
+    if (recording) return;
+
+    try {
+      setRecording(true);
+
+      // 1. Rekam audio
+      const audioBlob = await recordAudio();
+
+      // 2. Kirim ke /api/transcribe
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "recording.webm");
+
+      const res = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Gagal transkrip audio." }));
+        alert(err.error || "Gagal transkrip audio.");
+        setRecording(false);
+        return;
+      }
+
+      const { text } = await res.json();
+      if (text) {
+        setInput((prev) => (prev ? prev + " " + text : text));
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Gagal merekam audio.");
+    }
+    setRecording(false);
   }
 
   // Generate image via Pollinations.ai
@@ -573,9 +611,21 @@ export default function ChatPage() {
                           ? "bg-purple-600 border-purple-500 text-white"
                           : "bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
                       }`}
-                      title="Generate gambar dari teks (Flux via Pollinations.ai)"
+                      title="Generate gambar dari teks (GPT Image 2 via Pollinations.ai)"
                     >
                       🎨
+                    </button>
+                    <button
+                      onClick={handleVoiceInput}
+                      disabled={recording}
+                      className={`rounded-xl border px-3 py-3 text-sm transition-colors ${
+                        recording
+                          ? "bg-red-600 border-red-500 text-white animate-pulse"
+                          : "bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
+                      }`}
+                      title={recording ? "Merekam... klik untuk berhenti" : "Rekam suara (Whisper)"}
+                    >
+                      {recording ? "⏺" : "🎤"}
                     </button>
                   </div>
                   <textarea
