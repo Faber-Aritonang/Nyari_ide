@@ -3,6 +3,9 @@
 
 const POLLINATIONS_BASE = "https://image.pollinations.ai/prompt";
 
+// Model default: gpt-image-2 (kualitas terbaik, gratis di Pollinations)
+// Alternatif: flux (cepat), nanobanana-2, ideogram-v4-balanced, wan-image
+
 export type ImageSize = "512" | "768" | "1024";
 
 export const IMAGE_SIZES: { value: ImageSize; label: string }[] = [
@@ -21,7 +24,7 @@ export function generateImageUrl(
   seed?: number
 ): string {
   const encoded = encodeURIComponent(prompt);
-  let url = `${POLLINATIONS_BASE}/${encoded}?width=${size}&height=${size}&model=flux&nologo=true`;
+  let url = `${POLLINATIONS_BASE}/${encoded}?width=${size}&height=${size}&model=gpt-image-2&nologo=true`;
   if (seed !== undefined) {
     url += `&seed=${seed}`;
   }
