@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { downloadImage } from "@/lib/image-gen";
-import { t, getLang } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
 
 export interface Message {
   role: "user" | "assistant";
@@ -14,25 +14,81 @@ export interface Message {
 
 /**
  * Deteksi apakah teks mayoritas English atau Indonesia.
- * Sederhana: hitung karakter Latin vs kata Indonesia umum.
+ * Menggunakan multiple heuristics:
+ * 1. Karakter non-ASCII (Indonesia punya banyak: á, é, í, ó, ú, ñ)
+ * 2. Kata Indonesia umum
+ * 3. Panjang kata rata-rata (Indonesia cenderung lebih pendek)
+ * 4. Suffix kata Indonesia (-kan, -an, -nya, -lah, -kah)
  */
-function isEnglishText(text: string): boolean {
+function detectLanguage(text: string): "en" | "id" {
   const lower = text.toLowerCase();
-  // Kata Indonesia umum
-  const idWords = [
+  const words = lower.split(/\s+/).filter((w) => w.length > 0);
+
+  if (words.length === 0) return "en";
+
+  // 1. Cek karakter non-ASCII (Indonesia: á, é, í, ó, ú, ñ, etc.)
+  const nonAscii = (text.match(/[^\x00-\x7F]/g) || []).length;
+  if (nonAscii > text.length * 0.02) return "id";
+
+  // 2. Kata Indonesia umum (HANYA kata Indonesia, bukan English)
+  const idWords = new Set([
     "adalah", "akan", "atau", "bahwa", "bisa", "dengan", "dari", "dalam",
     "ini", "itu", "juga", "kami", "karena", "kita", "mereka", "tidak",
     "saya", "untuk", "pada", "sudah", "belum", "bagaimana", "mengapa",
-    "apakah", "siapa", "dimana", "kapan", "jadi", "hal", "cara", "makanya",
-    "nih", "dong", "sih", "kah", "lah", "punya", "sangat", "lebih",
-  ];
-  const words = lower.split(/\s+/);
+    "apakah", "siapa", "dimana", "kapan", "jadi", "hal", "cara",
+    "punya", "sangat", "lebih", "ada", "apa", "bila", "hanya",
+    "jika", "maka", "oleh", "serta", "antara", "lain", "setiap",
+    "melalui", "seperti", "tersebut", "sedangkan", "sementara",
+    "walaupun", "meskipun", "sehingga", "kemudian", "sekarang",
+    "nanti", "besok", "kemarin", "hari", "orang", "rumah", "buku",
+    "tulis", "baca", "dengar", "lihat", "pergi", "datang", "makan",
+    "minum", "tidur", "bangun", "besar", "kecil", "panjang", "pendek",
+    "tinggi", "rendah", "bagus", "jelek", "baru", "lama", "cepat",
+    "lambat", "mudah", "sulit", "gampang", "susah", "senang", "sedih",
+    "mau", "suka", "tau", "tahu", "kasih", "ambil", "taruh",
+    "bikin", "buat", "pake", "pakai", "gimana", "kenapa",
+    "emang", "memang", "sekali", "banget", "merupakan", "ialah",
+    "yaitu", "yakni", "contohnya", "misalnya", "berikut",
+    "selanjutnya", "sebelumnya", "terakhir", "pertama", "kedua",
+    "ketiga", "keempat", "satu", "dua", "tiga", "empat", "lima",
+    "enam", "tujuh", "delapan", "sembilan", "sepuluh",
+    "nih", "dong", "sih", "kah", "lah", "makanya",
+    "bukan", "harus", "mau", "perlu", "boleh",
+    "jawab", "tanya", "ceritakan", "jelaskan", "jelaskan",
+    "gunakan", "coba", "tolong", "bantu", "kirim",
+  ]);
+
   let idCount = 0;
   for (const w of words) {
-    if (idWords.includes(w)) idCount++;
+    // Bersihkan tanda baca
+    const clean = w.replace(/[^a-z]/g, "");
+    if (idWords.has(clean)) idCount++;
   }
-  // Jika >= 20% kata adalah kata Indonesia → Indonesia
-  return idCount / words.length < 0.2;
+
+  // 3. Cek suffix Indonesia
+  const idSuffixes = ["kan", "an", "nya", "lah", "kah", "pun", " bezpo",
+    "kalau", "karena", "sebab", "supaya", "agar", "biar",
+    "kalau", "bila", "jika", "seandainya", "apabila"];
+  let suffixCount = 0;
+  for (const w of words) {
+    const clean = w.replace(/[^a-z]/g, "");
+    for (const suf of idSuffixes) {
+      if (clean.endsWith(suf) && clean.length > suf.length + 1) {
+        suffixCount++;
+        break;
+      }
+    }
+  }
+
+  // 4. Hitung skor
+  const idWordScore = idCount / words.length;
+  const suffixScore = suffixCount / words.length;
+
+  // Jika >= 15% kata Indonesia ATAU ada suffix Indonesia → Indonesia
+  if (idWordScore >= 0.15 || suffixScore >= 0.1) return "id";
+
+  // Default: English
+  return "en";
 }
 
 export default function ChatMessage({ message }: { message: Message }) {
@@ -40,7 +96,6 @@ export default function ChatMessage({ message }: { message: Message }) {
   const [speaking, setSpeaking] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Bersihkan markdown untuk TTS
   function cleanTextForTTS(text: string): string {
@@ -54,34 +109,31 @@ export default function ChatMessage({ message }: { message: Message }) {
       .slice(0, 2000);
   }
 
-  // Stop TTS (baik Orpheus maupun Web Speech)
+  // Stop TTS
   function stopTTS() {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
-    }
-    if (synthRef.current) {
-      window.speechSynthesis.cancel();
-      synthRef.current = null;
     }
     setSpeaking(false);
   }
 
   // TTS dengan Orpheus
   // English → Orpheus English (hannah)
-  // Indonesia → Orpheus Arabic Saudi (noura) — lebih cocok untuk ID
-  async function speakWithOrpheus(text: string, isEn: boolean) {
+  // Indonesia → Orpheus Arabic Saudi (noura)
+  async function speakWithOrpheus(text: string, lang: "en" | "id") {
     try {
       setLoadingAudio(true);
+      const voice = lang === "en" ? "hannah" : "noura";
+
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice: isEn ? "hannah" : "noura" }),
+        body: JSON.stringify({ text, voice }),
       });
 
       if (!res.ok) {
-        // Fallback ke Web Speech API
-        speakWithWebSpeech(text);
+        setLoadingAudio(false);
         return;
       }
 
@@ -108,43 +160,8 @@ export default function ChatMessage({ message }: { message: Message }) {
 
       await audio.play();
     } catch {
-      // Fallback ke Web Speech API
-      speakWithWebSpeech(text);
+      setLoadingAudio(false);
     }
-  }
-
-  // TTS dengan Web Speech API (Indonesia)
-  function speakWithWebSpeech(text: string) {
-    if (!("speechSynthesis" in window)) {
-      setLoadingAudio(false);
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "id-ID";
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-
-    const voices = window.speechSynthesis.getVoices();
-    const idVoice = voices.find((v) => v.lang.startsWith("id"));
-    if (idVoice) utterance.voice = idVoice;
-
-    utterance.onstart = () => {
-      setSpeaking(true);
-      setLoadingAudio(false);
-    };
-    utterance.onend = () => {
-      setSpeaking(false);
-      synthRef.current = null;
-    };
-    utterance.onerror = () => {
-      setSpeaking(false);
-      setLoadingAudio(false);
-      synthRef.current = null;
-    };
-
-    synthRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
   }
 
   // Main TTS handler
@@ -157,14 +174,9 @@ export default function ChatMessage({ message }: { message: Message }) {
     const cleanText = cleanTextForTTS(message.content);
     if (!cleanText) return;
 
-    setLoadingAudio(true);
-
-    // Deteksi bahasa: English → Orpheus, Indonesia → Web Speech API
-    const lang = getLang();
-    const isEn = isEnglishText(cleanText);
-
-    // Semua bahasa pakai Orpheus (Arabic Saudi untuk ID, English untuk EN)
-    await speakWithOrpheus(cleanText, isEn);
+    const lang = detectLanguage(cleanText);
+    console.log("[TTS] Detected language:", lang, "| Text:", cleanText.slice(0, 50));
+    await speakWithOrpheus(cleanText, lang);
   }
 
   return (
