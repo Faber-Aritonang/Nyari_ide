@@ -9,7 +9,7 @@
 - [x] .env.local + Vercel env vars
 - [x] Deploy kosong ke Vercel ✅ MILESTONE 1
 
-## FASE 1 — Autentikasi
+## FASE 1 — Autentikasi ✅
 - [x] Integrasi Supabase Auth (email+password)
 - [x] Halaman register (cek whitelist `allowed_emails`)
 - [x] Halaman login
@@ -17,15 +17,12 @@
 - [x] Logout
 ✅ MILESTONE 2: hanya user whitelisted bisa masuk
 
-## FASE 2 — Chat Text
+## FASE 2 — Chat Text ✅
 - [x] API route proxy Groq (`api/chat/route.ts`) + verifikasi auth
 - [x] UI chat dengan streaming response
 - [x] Simpan percakapan & pesan ke Supabase
 - [x] Sidebar daftar riwayat percakapan (per user)
 - [x] Buat/hapus percakapan
-## FASE 2 — Chat Text ✅
-Tujuan: Pengguna yang sudah login bisa mengobrol dengan LLM (Llama 3.3 70B via Groq)
-dengan respons streaming, dan riwayat percakapan tersimpan di Supabase.
 ### Milestone 2.1 — Database riwayat chat
 - [x] Tabel `conversations` + `messages` sudah ada dari FASE 0 (schema.sql)
 - [x] RLS aktif: user hanya bisa baca/tulis data miliknya sendiri
@@ -44,28 +41,60 @@ dengan respons streaming, dan riwayat percakapan tersimpan di Supabase.
 - [x] Hapus percakapan (dengan konfirmasi)
 ### Milestone 2.4 — System prompt & pengaturan model
 - [x] System prompt default di lib/groq.ts (identitas: "Nyari_ide", bilingual)
-- [x] Model & parameter terpusat di lib/groq.ts (llama-3.3-70b-versatile, temperature, max_tokens)
+- [x] Model & parameter terpusat di lib/groq.ts
 - [x] Error handling: Groq rate limit (429) → pesan ramah di UI
 ### Definition of Done (FASE 2)
 - [x] User bisa chat multi-turn dengan respons streaming
 - [x] Riwayat persisten per user (buka dari device lain, chat masih ada)
 - [x] Keamanan: RLS aktif (user A tidak bisa baca chat user B)
-- [ ] Deploy ke Vercel, tes dari URL produksi
+- [x] Deploy ke Vercel, tes dari URL produksi
 - [x] Update PROJECT_CONTEXT.md
-
-
 ✅ MILESTONE 3: chat text fungsional tersimpan ✅
 
-## FASE 3 — Multimodal
-- [ ] Model selector dropdown (70B / 8B)
-- [ ] Upload gambar → vision (Llama 4 Scout)
-- [ ] Upload file teks → context injection
-- [ ] Upload PDF → extract via pdf.js client-side
+## FASE 3 — Multimodal ✅
+- [x] Model selector dropdown (4 model: Qwen 3.6/3.8, GPT-OSS 20B/120B)
+- [x] Upload gambar → vision (compressed otomatis 512x512 JPEG 70%)
+- [x] Upload file teks → context injection (max 8000 chars)
+- [x] Upload PDF → extract teks via pdf.js client-side (max 10 halaman)
 - [ ] Text-to-speech (Web Speech API, tombol play per pesan AI)
 - [ ] Voice input (Whisper via Groq)
-✅ MILESTONE 4: multimodal lengkap
+### Milestone 3.1 — Model Selector
+- [x] AVAILABLE_MODELS di lib/groq.ts (daftar model untuk UI + validasi server)
+- [x] API route GET /api/models
+- [x] Dropdown selector di chat page (muncul jika >1 model)
+- [x] Model dipilih dikirim ke server, divalidasi against AVAILABLE_MODELS
+### Milestone 3.2 — Upload Gambar
+- [x] Tombol 🖼️ di input area + file picker
+- [x] Kompres otomatis: resize max 512px + JPEG 70% + fill putih untuk transparan
+- [x] Preview gambar sebelum kirim + tombol hapus
+- [x] API route: terima imageUrl (base64), kirim ke Groq format vision
+- [x] Simpan image_url ke tabel messages
+- [x] Tampilkan gambar di ChatMessage component
+- [x] Strip gambar lama dari riwayat (hanya gambar terkini dikirim)
+- [x] Validasi: format (JPG/PNG/WebP), ukuran (maks 4MB)
+- [x] Keterangan format di UI (tooltip, hint, error message)
+### Milestone 3.3 — Upload File & PDF
+- [x] Tombol 📎 di input area + file picker
+- [x] lib/file-utils.ts: readTextFile() + extractPdfText()
+- [x] File teks: baca langsung, max 8000 chars (~2000 tokens)
+- [x] PDF: extract teks per halaman via pdf.js, max 10 halaman, max 8000 chars
+- [x] API route: terima fileContext, sisipkan ke user message
+- [x] Strip file lama dari riwayat (hanya file terkini dikirim)
+- [x] Preview nama file + ukuran sebelum kirim
+- [x] Validasi: max 200KB teks, max 5MB PDF
+### Definition of Done (FASE 3)
+- [x] User bisa pilih model dari dropdown
+- [x] User bisa upload gambar → AI bisa melihat & menjelaskan
+- [x] User bisa upload file teks/PDF → AI bisa membaca & menjawab
+- [x] Token usage hemat (gambar/file lama di-strip dari riwayat)
+- [x] Error handling jelas untuk rate limit & format error
+- [x] Deploy ke Vercel, tes dari URL produksi
+- [x] Update PROJECT_CONTEXT.md
+✅ MILESTONE 4: multimodal lengkap ✅
 
-## FASE 4 — Polesan
+## FASE 4 — Polesan ⬜
+- [ ] Text-to-speech (Web Speech API, tombol play per pesan AI)
+- [ ] Voice input (Whisper Large v3 via Groq)
 - [ ] Toggle bahasa ID/EN (lib/i18n.ts)
 - [ ] Responsive mobile
 - [ ] Manajemen whitelist (page admin: tambah/hapus email)
