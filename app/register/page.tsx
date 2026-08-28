@@ -49,28 +49,28 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100 p-4">
-      <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-8">
+    <main className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
+      <div className="w-full max-w-md bg-surface border border-border-theme rounded-2xl p-8">
         <h1 className="text-2xl font-bold mb-1">Nyari_ide 🧠</h1>
-        <p className="text-sm text-zinc-400 mb-6">
+        <p className="text-sm text-muted mb-6">
           Daftar akun — khusus email yang sudah diundang.
         </p>
 
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
-            <label className="block text-sm mb-1 text-zinc-300">Email</label>
+            <label className="block text-sm mb-1 text-muted-light">Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 focus:outline-none focus:border-blue-500"
+              className="w-full rounded-lg bg-input-bg border border-border-theme px-3 py-2 focus:outline-none focus:border-blue-500"
               placeholder="nama@email.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm mb-1 text-zinc-300">
+            <label className="block text-sm mb-1 text-muted-light">
               Password (min. 6 karakter, ada huruf besar & angka)
             </label>
             <input
@@ -79,7 +79,7 @@ export default function RegisterPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 focus:outline-none focus:border-blue-500"
+              className="w-full rounded-lg bg-input-bg border border-border-theme px-3 py-2 focus:outline-none focus:border-blue-500"
               placeholder="••••••••"
             />
           </div>
@@ -99,7 +99,7 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <p className="text-sm text-zinc-400 mt-6 text-center">
+        <p className="text-sm text-muted mt-6 text-center">
           Sudah punya akun?{" "}
           <a href="/login" className="text-blue-400 hover:underline">
             Masuk

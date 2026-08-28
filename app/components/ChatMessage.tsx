@@ -114,7 +114,7 @@ export default function ChatMessage({ message }: { message: Message }) {
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
-      <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${isUser ? "bg-blue-600 text-white" : "bg-zinc-800 text-zinc-100 border border-zinc-700"}`}>
+      <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${isUser ? "bg-blue-600 text-white" : "bg-surface text-foreground border border-border-theme"}`}>
         {message.image_url && (
           <div className="mb-2">
             <img src={message.image_url} alt="Uploaded image" className="rounded-lg max-w-full max-h-64 object-cover" />
@@ -123,7 +123,7 @@ export default function ChatMessage({ message }: { message: Message }) {
         {message.generated_image_url && (
           <div className="mb-2">
             <img src={message.generated_image_url} alt="Generated image" className="rounded-lg max-w-full max-h-96 object-contain" />
-            <button onClick={() => downloadImage(message.generated_image_url!, `nyari-ide-${Date.now()}.jpg`)} className="mt-2 text-xs text-zinc-400 hover:text-white transition-colors">
+            <button onClick={() => downloadImage(message.generated_image_url!, `nyari-ide-${Date.now()}.jpg`)} className="mt-2 text-xs text-muted hover:text-foreground transition-colors">
               {t("downloadImage")}
             </button>
           </div>
@@ -136,9 +136,9 @@ export default function ChatMessage({ message }: { message: Message }) {
               components={{
                 p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                 code: ({ children, className }) => {
-                  return !className ? <code className="bg-zinc-700 px-1.5 py-0.5 rounded text-sm">{children}</code> : <code className={className}>{children}</code>;
+                  return !className ? <code className="bg-accent-bg px-1.5 py-0.5 rounded text-sm">{children}</code> : <code className={className}>{children}</code>;
                 },
-                pre: ({ children }) => <pre className="bg-zinc-900 rounded-lg p-3 overflow-x-auto mb-2 last:mb-0">{children}</pre>,
+                pre: ({ children }) => <pre className="bg-code-bg rounded-lg p-3 overflow-x-auto mb-2 last:mb-0">{children}</pre>,
               }}
             >
               {message.content}
@@ -151,7 +151,7 @@ export default function ChatMessage({ message }: { message: Message }) {
             <select
               value={voice}
               onChange={(e) => setVoice(e.target.value)}
-              className="bg-zinc-700 border border-zinc-600 rounded px-1.5 py-0.5 text-xs text-zinc-300"
+              className="bg-input-bg border border-border-theme rounded px-1.5 py-0.5 text-xs text-muted-light"
             >
               {voices.map((v) => (
                 <option key={v} value={v}>{v}</option>
@@ -160,7 +160,7 @@ export default function ChatMessage({ message }: { message: Message }) {
             <button
               onClick={handleTTS}
               disabled={loadingAudio}
-              className={`text-xs transition-colors ${loadingAudio ? "text-zinc-500 animate-pulse" : speaking ? "text-red-400" : "text-zinc-500 hover:text-zinc-300"}`}
+              className={`text-xs transition-colors ${loadingAudio ? "text-muted animate-pulse" : speaking ? "text-red-400" : "text-muted hover:text-muted-light"}`}
             >
               {loadingAudio ? "🔊..." : speaking ? `⏹ ${t("stop")}` : `🔊 ${t("listen")}`}
             </button>

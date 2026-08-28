@@ -107,19 +107,19 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 p-4 md:p-8">
+    <main className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold">⚙️ Admin — Whitelist</h1>
-            <p className="text-sm text-zinc-400 mt-1">
+            <p className="text-sm text-muted mt-1">
               Kelola email yang boleh mendaftar ({emails.length}/10 akun)
             </p>
           </div>
           <button
             onClick={() => router.push("/chat")}
-            className="text-sm text-zinc-400 hover:text-white transition-colors"
+            className="text-sm text-muted hover:text-foreground transition-colors"
           >
             ← Kembali ke Chat
           </button>
@@ -133,7 +133,7 @@ export default function AdminPage() {
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             placeholder="email@contoh.com"
-            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-input-bg border border-border-theme rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
           />
           <button
             type="submit"
@@ -157,15 +157,15 @@ export default function AdminPage() {
         )}
 
         {/* Email list */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+        <div className="bg-surface border border-border-theme rounded-2xl overflow-hidden">
           {loading ? (
-            <div className="p-8 text-center text-zinc-500">Memuat...</div>
+            <div className="p-8 text-center text-muted">Memuat...</div>
           ) : emails.length === 0 ? (
-            <div className="p-8 text-center text-zinc-500">Belum ada email di whitelist</div>
+            <div className="p-8 text-center text-muted">Belum ada email di whitelist</div>
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="border-b border-zinc-800 text-xs text-zinc-500">
+                <tr className="border-b border-border-theme text-xs text-muted">
                   <th className="text-left px-4 py-3">Email</th>
                   <th className="text-left px-4 py-3 hidden sm:table-cell">Diundang oleh</th>
                   <th className="text-left px-4 py-3 hidden sm:table-cell">Tanggal</th>
@@ -174,23 +174,23 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {emails.map((entry) => (
-                  <tr key={entry.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
+                  <tr key={entry.id} className="border-b border-border-theme/50 hover:bg-surface-hover/30">
                     <td className="px-4 py-3 text-sm">
                       {entry.email}
                       {entry.email === userEmail && (
                         <span className="ml-2 text-xs text-blue-400">(you)</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-zinc-400 hidden sm:table-cell">
+                    <td className="px-4 py-3 text-sm text-muted hidden sm:table-cell">
                       {entry.invited_by || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-zinc-500 hidden sm:table-cell">
+                    <td className="px-4 py-3 text-sm text-muted hidden sm:table-cell">
                       {new Date(entry.created_at).toLocaleDateString("id-ID")}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => handleDelete(entry.email)}
-                        className="text-zinc-500 hover:text-red-400 text-sm transition-colors"
+                        className="text-muted hover:text-red-400 text-sm transition-colors"
                         title="Hapus dari whitelist"
                       >
                         🗑️
@@ -204,7 +204,7 @@ export default function AdminPage() {
         </div>
 
         {/* Info */}
-        <p className="text-xs text-zinc-600 mt-4 text-center">
+        <p className="text-xs text-muted-lighter mt-4 text-center">
           Maks 10 akun. Email yang dihapus tidak bisa login lagi (tapi akun Supabase-nya masih ada).
         </p>
       </div>

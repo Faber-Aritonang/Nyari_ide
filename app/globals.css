@@ -1,26 +1,67 @@
 @import "tailwindcss";
 
+/* Default: light mode */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f9fa;
+  --foreground: #1a1a2e;
+  --surface: #ffffff;
+  --surface-hover: #f1f3f5;
+  --border: #dee2e6;
+  --border-light: #e9ecef;
+  --muted: #6c757d;
+  --muted-light: #adb5bd;
+  --muted-lighter: #ced4da;
+  --accent-bg: #e9ecef;
+  --code-bg: #f1f3f5;
+  --code-border: #dee2e6;
+  --sidebar-bg: #ffffff;
+  --input-bg: #f1f3f5;
+}
+
+/* Dark mode */
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --surface: #18181b;
+  --surface-hover: #27272a;
+  --border: #27272a;
+  --border-light: #3f3f46;
+  --muted: #71717a;
+  --muted-light: #a1a1aa;
+  --muted-lighter: #52525b;
+  --accent-bg: #27272a;
+  --code-bg: #09090b;
+  --code-border: #27272a;
+  --sidebar-bg: #18181b;
+  --input-bg: #27272a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border-theme: var(--border);
+  --color-border-light: var(--border-light);
+  --color-muted: var(--muted);
+  --color-muted-light: var(--muted-light);
+  --color-muted-lighter: var(--muted-lighter);
+  --color-accent-bg: var(--accent-bg);
+  --color-code-bg: var(--code-bg);
+  --color-code-border: var(--code-border);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-input-bg: var(--input-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Smooth transition when toggling theme */
+* {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }

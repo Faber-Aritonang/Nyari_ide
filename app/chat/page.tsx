@@ -9,6 +9,7 @@ import { readTextFile, extractPdfText } from "@/lib/file-utils";
 import { generateImageUrl } from "@/lib/image-gen";
 import { startRecording, stopRecording } from "@/lib/voice-utils";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme-context";
 
 interface Conversation {
   id: string;
@@ -25,6 +26,7 @@ interface ModelOption {
 export default function ChatPage() {
   const supabase = createClient();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
 
   const [email, setEmail] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -432,7 +434,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100">
+    <div className="flex h-screen bg-background text-foreground">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -443,20 +445,29 @@ export default function ChatPage() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col transition-transform duration-200 ${
+        className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-sidebar-bg border-r border-border-theme flex flex-col transition-transform duration-200 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
         {/* Header */}
-        <div className="p-4 border-b border-zinc-800">
+        <div className="p-4 border-b border-border-theme">
           <div className="flex items-center justify-between">
             <h1 className="text-lg font-bold">🧠 {t("appName")}</h1>
-            <button
-              onClick={toggleLang}
-              className="text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded px-2 py-1 transition-colors"
-            >
-              {lang === "id" ? "EN" : "ID"}
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={toggleTheme}
+                className="text-xs bg-input-bg hover:bg-surface-hover border border-border-theme rounded px-2 py-1 transition-colors"
+                title={theme === "dark" ? "Light mode" : "Dark mode"}
+              >
+                {theme === "dark" ? "☀️" : "🌙"}
+              </button>
+              <button
+                onClick={toggleLang}
+                className="text-xs bg-input-bg hover:bg-surface-hover border border-border-theme rounded px-2 py-1 transition-colors"
+              >
+                {lang === "id" ? "EN" : "ID"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -477,8 +488,8 @@ export default function ChatPage() {
               key={conv.id}
               className={`group flex items-center justify-between rounded-lg px-3 py-2 mb-1 cursor-pointer transition-colors ${
                 activeConvId === conv.id
-                  ? "bg-zinc-800 text-white"
-                  : "hover:bg-zinc-800/50 text-zinc-400"
+                  ? "bg-input-bg text-foreground"
+                  : "hover:bg-surface-hover text-muted"
               }`}
               onClick={() => selectConversation(conv.id)}
             >
@@ -488,7 +499,7 @@ export default function ChatPage() {
                   e.stopPropagation();
                   deleteConversation(conv.id);
                 }}
-                className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 text-xs ml-2 transition-opacity"
+                className="opacity-0 group-hover:opacity-100 text-muted hover:text-red-400 text-xs ml-2 transition-opacity"
               >
                 ✕
               </button>
@@ -496,7 +507,7 @@ export default function ChatPage() {
           ))}
 
           {conversations.length === 0 && (
-            <p className="text-xs text-zinc-500 text-center mt-8">
+            <p className="text-xs text-muted text-center mt-8">
               {t("noConversations").split("\n").map((line, i) => (
                 <span key={i}>
                   {line}
@@ -508,17 +519,17 @@ export default function ChatPage() {
         </div>
 
         {/* User info + logout */}
-        <div className="p-3 border-t border-zinc-800">
-          <div className="text-xs text-zinc-500 truncate mb-2">{email}</div>
+        <div className="p-3 border-t border-border-theme">
+          <div className="text-xs text-muted truncate mb-2">{email}</div>
           <button
             onClick={() => router.push("/admin")}
-            className="w-full rounded-lg bg-zinc-800 hover:bg-zinc-700 py-2 text-xs transition-colors mb-2"
+            className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
           >
             ⚙️ Admin
           </button>
           <button
             onClick={handleLogout}
-            className="w-full rounded-lg bg-zinc-800 hover:bg-zinc-700 py-2 text-xs transition-colors"
+            className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors"
           >
             {t("logout")}
           </button>
@@ -528,10 +539,10 @@ export default function ChatPage() {
       {/* Main chat area */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800 md:hidden">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border-theme md:hidden">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-zinc-400 hover:text-white text-xl"
+            className="text-muted hover:text-foreground text-xl"
           >
             ☰
           </button>
@@ -546,13 +557,13 @@ export default function ChatPage() {
             <div className="flex-1 overflow-y-auto px-3 py-4 md:px-4 md:py-6">
               <div className="max-w-3xl mx-auto">
                 {loadingHistory && (
-                  <p className="text-center text-zinc-500 text-sm">
+                  <p className="text-center text-muted text-sm">
                     {t("loadingHistory")}
                   </p>
                 )}
 
                 {messages.length === 0 && !loadingHistory && (
-                  <div className="text-center text-zinc-500 mt-10 md:mt-20">
+                  <div className="text-center text-muted mt-10 md:mt-20">
                     <p className="text-3xl md:text-4xl mb-4">🧠💡</p>
                     <p className="text-base md:text-lg font-medium mb-2">
                       {t("appName")}
@@ -571,22 +582,22 @@ export default function ChatPage() {
             </div>
 
             {/* Input area */}
-            <div className="border-t border-zinc-800 p-3 md:p-4">
+            <div className="border-t border-border-theme p-3 md:p-4">
               <div className="max-w-3xl mx-auto">
                 {/* Model selector */}
                 {models.length > 1 && (
                   <div className="mb-2 md:mb-3 flex items-center gap-2">
-                    <label className="text-xs text-zinc-500">Model:</label>
+                    <label className="text-xs text-muted">Model:</label>
                     <select
                       value={selectedModel}
                       onChange={(e) => setSelectedModel(e.target.value)}
-                      className="bg-zinc-800 border border-zinc-700 rounded-lg px-2 md:px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-blue-500"
+                      className="bg-input-bg border border-border-theme rounded-lg px-2 md:px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-blue-500"
                     >
                       {models.map((m) => (
                         <option key={m.id} value={m.id}>{m.label}</option>
                       ))}
                     </select>
-                    <span className="text-xs text-zinc-600 hidden sm:inline">
+                    <span className="text-xs text-muted-lighter hidden sm:inline">
                       {models.find((m) => m.id === selectedModel)?.description}
                     </span>
                   </div>
@@ -595,7 +606,7 @@ export default function ChatPage() {
                 {/* Image preview */}
                 {selectedImage && (
                   <div className="mb-2 md:mb-3 relative inline-block">
-                    <img src={selectedImage} alt="Preview" className="h-20 md:h-24 rounded-lg border border-zinc-700" />
+                    <img src={selectedImage} alt="Preview" className="h-20 md:h-24 rounded-lg border border-border-theme" />
                     <button
                       onClick={() => setSelectedImage(null)}
                       className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
@@ -605,32 +616,32 @@ export default function ChatPage() {
 
                 {/* File preview */}
                 {selectedFile && (
-                  <div className="mb-2 md:mb-3 flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2">
+                  <div className="mb-2 md:mb-3 flex items-center gap-2 bg-input-bg border border-border-theme rounded-lg px-3 py-2">
                     <span className="text-sm">📄</span>
-                    <span className="text-xs text-zinc-300 flex-1 truncate">{selectedFile.name}</span>
-                    <button onClick={() => setSelectedFile(null)} className="text-zinc-500 hover:text-red-400 text-xs">✕</button>
+                    <span className="text-xs text-muted-light flex-1 truncate">{selectedFile.name}</span>
+                    <button onClick={() => setSelectedFile(null)} className="text-muted hover:text-red-400 text-xs">✕</button>
                   </div>
                 )}
 
                 <div className="flex items-end gap-2 md:gap-3">
                   {/* Upload buttons */}
                   <div className="flex gap-1 flex-shrink-0">
-                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-2.5 md:px-3 py-2.5 md:py-3 text-sm cursor-pointer transition-colors" title={t("uploadImage")}>
+                    <label className="rounded-xl bg-input-bg hover:bg-surface-hover border border-border-theme px-2.5 md:px-3 py-2.5 md:py-3 text-sm cursor-pointer transition-colors" title={t("uploadImage")}>
                       🖼️
                       <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} className="hidden" />
                     </label>
-                    <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-2.5 md:px-3 py-2.5 md:py-3 text-sm cursor-pointer transition-colors" title={t("uploadFile")}>
+                    <label className="rounded-xl bg-input-bg hover:bg-surface-hover border border-border-theme px-2.5 md:px-3 py-2.5 md:py-3 text-sm cursor-pointer transition-colors" title={t("uploadFile")}>
                       📎
                       <input type="file" accept=".txt,.js,.ts,.py,.json,.md,.html,.css,.sql,.yaml,.yml,.xml,.csv,.log,.env,.config,.pdf,text/*" onChange={handleFileSelect} className="hidden" />
                     </label>
                     <button
                       onClick={() => { setImageGenMode(!imageGenMode); setSelectedImage(null); setSelectedFile(null); }}
-                      className={`rounded-xl border px-2.5 md:px-3 py-2.5 md:py-3 text-sm transition-colors ${imageGenMode ? "bg-purple-600 border-purple-500 text-white" : "bg-zinc-800 hover:bg-zinc-700 border-zinc-700"}`}
+                      className={`rounded-xl border px-2.5 md:px-3 py-2.5 md:py-3 text-sm transition-colors ${imageGenMode ? "bg-purple-600 border-purple-500 text-white" : "bg-input-bg hover:bg-surface-hover border-border-theme"}`}
                       title={t("imageGenMode")}
                     >🎨</button>
                     <button
                       onClick={handleVoiceInput}
-                      className={`rounded-xl border px-2.5 md:px-3 py-2.5 md:py-3 text-sm transition-colors ${recording ? "bg-red-600 border-red-500 text-white animate-pulse" : "bg-zinc-800 hover:bg-zinc-700 border-zinc-700"}`}
+                      className={`rounded-xl border px-2.5 md:px-3 py-2.5 md:py-3 text-sm transition-colors ${recording ? "bg-red-600 border-red-500 text-white animate-pulse" : "bg-input-bg hover:bg-surface-hover border-border-theme"}`}
                       title={recording ? t("recording") : t("voiceInput")}
                     >{recording ? "⏹" : "🎤"}</button>
                   </div>
@@ -642,7 +653,7 @@ export default function ChatPage() {
                     onKeyDown={handleKeyDown}
                     placeholder={imageGenMode ? t("typeImagePrompt") : t("typeMessage")}
                     rows={1}
-                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-sm resize-none focus:outline-none focus:border-blue-500 placeholder:text-zinc-500 min-h-[42px]"
+                    className="flex-1 bg-input-bg border border-border-theme rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-sm resize-none focus:outline-none focus:border-blue-500 placeholder:text-muted min-h-[42px]"
                   />
 
                   <button
@@ -658,7 +669,7 @@ export default function ChatPage() {
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center p-4">
-            <div className="text-center text-zinc-500">
+            <div className="text-center text-muted">
               <p className="text-3xl md:text-4xl mb-4">🧠💡</p>
               <p className="text-base md:text-lg font-medium mb-2">{t("appName")}</p>
               <p className="text-sm mb-6">{t("selectOrCreate")}</p>
