@@ -146,14 +146,18 @@ export default function ChatPage() {
     try {
       const reader = new FileReader();
       reader.onload = async () => {
-        const original = reader.result as string;
-        // Compress gambar sebelum ditampilkan & dikirim
-        const compressed = await compressImage(original);
-        setSelectedImage(compressed);
+        try {
+          const original = reader.result as string;
+          const compressed = await compressImage(original);
+          setSelectedImage(compressed);
+        } catch {
+          // Fallback: pakai original jika compress gagal
+          setSelectedImage(reader.result as string);
+        }
       };
       reader.readAsDataURL(file);
     } catch {
-      alert("Gagal memproses gambar.");
+      alert("Gagal membaca file gambar.");
     }
   }
 
