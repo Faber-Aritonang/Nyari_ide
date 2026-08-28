@@ -124,14 +124,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "Terlalu banyak permintaan. Silakan tunggu beberapa saat lalu coba lagi.",
+              "Kuota AI habis (rate limit). Tunggu beberapa saat lalu coba lagi. Jika upload gambar, coba pakai gambar yang lebih kecil.",
           },
           { status: 429 }
         );
       }
 
+      // Coba parse error message dari Groq
+      let groqErrorMsg = "Gagal menghubungi AI.";
+      try {
+        const errJson = JSON.parse(errBody);
+        groqErrorMsg = errJson.error?.message || groqErrorMsg;
+      } catch {
+        // ignore
+      }
+
       return NextResponse.json(
-        { error: "Gagal menghubungi AI. Silakan coba lagi." },
+        { error: groqErrorMsg + " Silakan coba lagi." },
         { status: 502 }
       );
     }

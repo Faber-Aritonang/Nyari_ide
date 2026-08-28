@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ChatMessage, { type Message } from "@/app/components/ChatMessage";
+import { compressImage } from "@/lib/image-utils";
 
 interface Conversation {
   id: string;
@@ -132,7 +133,7 @@ export default function ChatPage() {
   }
 
   // Handle image selection
-  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -142,11 +143,18 @@ export default function ChatPage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setSelectedImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const original = reader.result as string;
+        // Compress gambar sebelum ditampilkan & dikirim
+        const compressed = await compressImage(original);
+        setSelectedImage(compressed);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      alert("Gagal memproses gambar.");
+    }
   }
 
   // Send message
@@ -190,7 +198,7 @@ export default function ChatPage() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
+        const err = await response.json().catch(() => ({ error: "Gagal mengirim pesan." }));
         setMessages((prev) => {
           const updated = [...prev];
           const lastIdx = updated.length - 1;
