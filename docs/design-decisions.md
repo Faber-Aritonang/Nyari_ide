@@ -84,3 +84,21 @@ menghindari "Request too large" error.
 - File teks: max 200KB, output max 8000 chars (~2000 tokens)
 - PDF: max 5MB, max 10 halaman, output max 8000 chars
 Alasan: TPM limit Groq free tier. 8000 chars ≈ 2000 tokens, aman untuk satu request.
+
+## DD-18: Dark/Light Mode Toggle
+Keputusan: Toggle tema gelap/terang dengan CSS variables + ThemeProvider.
+- Default: dark mode
+- Persist: localStorage
+- Implementasi: `lib/theme-context.tsx` + `app/globals.css` (CSS variables)
+- Toggle button: ☀️/🌙 di sidebar header
+Alasan: CSS variables paling ringan, tidak perlu library tambahan.
+Semua komponen pakai theme variables (bg-background, bg-surface, dll)
+bukan hardcoded zinc colors.
+
+## DD-19: Admin Page Restriction (Server + Client)
+Keputusan: Admin page (/admin) hanya bisa diakses email `faber.aritonang@gmail.com`.
+- Layer 1 (Middleware): Cek email user sebelum serve /admin → redirect ke /chat
+- Layer 2 (Client): Double-check email di admin page → redirect ke /chat
+- Layer 3 (Sidebar): Tombol ⚙️ Admin hanya muncul untuk admin
+Alasan: Admin bisa tambah/hapus whitelist. Hanya owner yang boleh akses.
+Tiga layer defense: server-side (middleware), client guard, UI visibility.

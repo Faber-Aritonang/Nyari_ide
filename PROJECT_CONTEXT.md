@@ -13,6 +13,7 @@ autentikasi email+password (Supabase).
 
 ## Tech Stack
 - Frontend: Next.js 16 (App Router, TypeScript, Tailwind CSS)
+- Theme: Dark/Light mode toggle (CSS variables + ThemeProvider)
 - LLM: Groq API — model selection lihat lib/groq.ts
 - TTS: Groq Orpheus (English + Arabic Saudi untuk Indonesia)
 - STT: Whisper Large v3 Turbo via Groq
@@ -51,8 +52,10 @@ autentikasi email+password (Supabase).
 | 🎤 Voice input | Whisper Large v3 Turbo (Groq) | Gratis |
 | 🔊 Text-to-speech | Orpheus EN + Arabic SA (Groq) | Gratis |
 | 🌐 Toggle bahasa ID/EN | lib/i18n.ts (persist localStorage) | - |
+| 🌓 Dark/Light mode | CSS variables + ThemeProvider | - |
 | 📱 Responsive mobile | Tailwind CSS + hamburger menu | - |
 | 👤 Admin whitelist | /admin — tambah/hapus email | Gratis |
+| 🔒 Admin restriction | Hanya faber.aritonang@gmail.com | - |
 | 🔄 Model selector | Dropdown (4 model tersedia) | Gratis |
 | 🗂️ Riwayat chat | Supabase per user, RLS aktif | Gratis |
 
@@ -70,13 +73,13 @@ app/
 │       ├── [id]/route.ts          — Hapus percakapan
 │       └── [id]/messages/route.ts — Ambil pesan
 ├── chat/page.tsx                  — Halaman utama chat
-├── admin/page.tsx                 — Admin whitelist page
+├── admin/page.tsx                 — Admin whitelist page (restricted)
 ├── components/ChatMessage.tsx     — Bubble pesan + TTS + generated image
 ├── login/page.tsx                 — Login
 ├── register/page.tsx              — Register
 ├── dashboard/page.tsx             — Dashboard placeholder
 ├── page.tsx                       — Redirect
-└── layout.tsx                     — Root layout
+└── layout.tsx                     — Root layout + ThemeProvider
 lib/
 ├── groq.ts                        — Config model (AVAILABLE_MODELS, CHAT_CONFIG)
 ├── auth.ts                        — isEmailAllowed()
@@ -85,10 +88,11 @@ lib/
 ├── file-utils.ts                  — Baca file teks + extract PDF
 ├── voice-utils.ts                 — MediaRecorder wrapper
 ├── i18n.ts                        — String ID/EN
+├── theme-context.tsx              — Dark/Light mode toggle
 └── supabase/
     ├── server.ts                  — Server-side Supabase client
     ├── client.ts                  — Browser-side Supabase client
-    └── middleware.ts               — Auth middleware
+    └── middleware.ts               — Auth + admin restriction
 middleware.ts                       — Next.js middleware entry point
 ```
 
@@ -99,14 +103,15 @@ middleware.ts                       — Next.js middleware entry point
 - Streaming via ReadableStream dari API route ke client
 - Riwayat diambil server-side sebelum call Groq (bukan dari client)
 - Judul percakapan = potongan pesan pertama user (maks ~50 char)
-- Gambar dikompres otomatis (512x512 JPEG 70%) sebelum dikirim
+- Gambar dikompres otomatis (512x512 JPEG 60%) sebelum dikirim
 - Gambar/file LAMA di-strip dari riwayat → hanya konten terkini yang dikirim
 - File teks: max 8000 chars (~2000 tokens) — hemat TPM
 - PDF: max 10 halaman, max 8000 chars
 - Model selector: daftar model di lib/groq.ts, validasi server-side
 - TTS: Orpheus English (hannah) untuk English, Orpheus Arabic Saudi (noura) untuk Indonesia
 - Text-to-image: Pollinations.ai GPT Image 2 (gratis, tanpa API key)
-- Admin: hanya email tertentu yang bisa akses /admin (diatur di middleware)
+- Admin: hanya email faber.aritonang@gmail.com yang bisa akses /admin
+- Dark/Light mode: CSS variables + ThemeProvider, persist di localStorage
 
 ## Known Issues
 - Next.js 16 warning "middleware convention is deprecated, use proxy instead" — aman diabaikan
@@ -116,7 +121,6 @@ middleware.ts                       — Next.js middleware entry point
 ## Masa Depan (Backlog)
 - RAG: pgvector + embedding Hugging Face untuk Q&A dokumen spesifik
 - Regenerasi jawaban, edit pesan
-- Tema gelap/terang
 
 ## Untuk AI Assistant Baru
 Jika chat sebelumnya hilang: baca README.md, ROADMAP.md,

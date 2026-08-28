@@ -27,6 +27,7 @@ Pengguna yang sudah login dapat:
 | 🎤 Voice input | Bicara ke mikrofon → diubah jadi teks (Whisper Large v3 Turbo) |
 | 🔄 Model selector | Pilih model AI: Qwen 3.8/3.6, GPT-OSS 120B/20B |
 | 🌐 Bilingual | Antarmuka dalam Bahasa Indonesia & English |
+| 🌓 Dark/Light mode | Toggle tema gelap/terang, tersimpan otomatis |
 | 🗂️ Riwayat chat | Percakapan tersimpan per user di database, bisa dibuka dari device mana pun |
 | 📱 Mobile | Responsive di HP & desktop |
 

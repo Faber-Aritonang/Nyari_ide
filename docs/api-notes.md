@@ -6,7 +6,8 @@ Auth header: Authorization: Bearer $GROQ_API_KEY
 
 ### Endpoint yang dipakai
 - POST /chat/completions      → chat + vision (streaming: "stream": true)
-- POST /audio/transcriptions  → Whisper (voice input) — FASE 4
+- POST /audio/transcriptions  → Whisper STT (voice input)
+- POST /audio/speech          → Orpheus TTS (text-to-speech)
 
 ### Model yang Tersedia (Agustus 2026)
 | Model | Tipe | Keterangan |
@@ -15,7 +16,9 @@ Auth header: Authorization: Bearer $GROQ_API_KEY
 | qwen/qwen3.6-27b | Chat + Vision | Alternatif Qwen |
 | openai/gpt-oss-120b | Chat only | Flagship, kualitas terbaik |
 | openai/gpt-oss-20b | Chat only | Cepat & ringan |
-| whisper-large-v3 | STT | Voice input |
+| whisper-large-v3-turbo | STT | Voice input (cepat) |
+| orpheus-v1-english | TTS | Suara natural English (voice: hannah, diana, autumn, austin, daniel, troy) |
+| orpheus-arabic-saudi | TTS | Suara natural untuk Indonesia (voice: noura, lulwa, aisha, fahad, sultan, abdullah) |
 
 Catatan: Model Llama, Mixtral, Gemma belum tersedia di akun Groq saat ini.
 Cek model terbaru: https://console.groq.com/docs/models
@@ -86,14 +89,43 @@ data: [DONE]
 | 400 | Invalid request | Tampilkan pesan error dari Groq |
 | 404 | Model not found | Cek model di AVAILABLE_MODELS |
 
+### Orpheus TTS (text-to-speech)
+```json
+POST /audio/speech
+{
+  "model": "orpheus-v1-english",
+  "input": "Hello world",
+  "voice": "hannah",
+  "response_format": "wav"
+}
+```
+Model:
+- `orpheus-v1-english` — voice: hannah, diana, autumn, austin, daniel, troy
+- `orpheus-arabic-saudi` — voice: noura, lulwa, aisha, fahad, sultan, abdullah
+
+Deteksi bahasa otomatis di ChatMessage.tsx:
+- Teks English → Orpheus English (hannah)
+- Teks Indonesia → Orpheus Arabic Saudi (noura) — fonemi mirip Indonesia
+
+Rate limit: 429 jika terlalu sering. Tunggu 10-15 detik antar request.
+
 ## Pollinations.ai (text-to-image)
-TANPA API KEY. GET:
-https://image.pollinations.ai/prompt/{urlencoded_prompt}?width=1024&height=1024&nologo=true
+TANPA API KEY. Model: **GPT Image 2**
+GET: `https://image.pollinations.ai/prompt/{urlencoded_prompt}?width=1024&height=1024&model=gpt-image-2&nologo=true`
+Opsi model lain: flux, dreamshaper, ideogram-v4-balanced, wan-image
 
 ## Supabase
 - Auth: signUp / signInWithPassword
 - RLS WAJIB aktif pada conversations & messages
 - Tabel: allowed_emails, conversations, messages (dengan kolom image_url)
+
+## Dark/Light Mode
+- ThemeProvider: `lib/theme-context.tsx`
+- CSS variables: `app/globals.css` (var(--background), var(--surface), dll)
+- Toggle: ☀️/🌙 di sidebar header
+- Persist: localStorage key "theme"
+- Default: dark mode
+- Class toggle: `<html class="dark">` → switch CSS variables
 
 ## Embedding (RAG masa depan)
 Groq belum punya embedding model. Solusi: Hugging Face Inference API + pgvector.

@@ -143,4 +143,3 @@
 ## Masa Depan (backlog)
 - RAG: pgvector + embedding HF untuk Q&A dokumen spesifik
 - Regenerasi jawaban, edit pesan
-- Tema gelap/terang
