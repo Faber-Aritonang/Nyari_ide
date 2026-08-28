@@ -8,6 +8,32 @@ Alasan: API routes built-in untuk sembunyikan API key, mudah deploy ke Vercel.
 ## DD-02: Auth = Supabase Auth
 Alternatif: Firebase Auth, Cloudflare Access, custom auth.
 Dipilih Supabase: email+password siap pakai, database + storage gratis, RLS.
+    ### DD-2.1 — Streaming via API Route, bukan client-call langsung
+    Keputusan: Client → POST /api/chat (server) → Groq API → stream balik ke client.
+    Alasan: GROQ_API_KEY tidak boleh pernah ada di browser (prinsip inti project).
+    Streaming tetap bisa dilakukan dari API route dengan mengembalikan ReadableStream.
+
+    ### DD-2.2 — Riwayat diambil server-side sebelum call Groq
+    Keputusan: API route mengambil riwayat messages dari Supabase berdasarkan
+    conversationId + session user, bukan menerima riwayat dari client.
+    Alasan: Client tidak bisa memalsukan konteks/menghemat token secara curang;
+    sumber kebenaran tunggal ada di database.
+
+    ### DD-2.3 — Struktur data chat
+    - conversations: metadata percakapan (judul, owner)
+    - messages: baris per pesan, role ∈ {'user','assistant','system'}
+    Alasan: Mudah untuk pagination nanti, dan fondasi siap untuk RAG (FASE lanjutan)
+    karena tiap message bisa di-embed secara terpisah.
+
+    ### DD-2.4 — Judul percakapan sederhana
+    Keputusan: Judul = potongan pesan pertama user (maks ~50 char).
+    Alasan: Cukup untuk maks 10 user; LLM-generated title dianggap over-engineering
+    untuk sekarang (bisa jadi peningkatan nanti).
+
+    ### DD-2.5 — Tidak pakai fitur Assistant/Threads milik provider
+    Keputusan: State percakapan dikelola sendiri di Supabase, bukan disimpan di
+    sisi Groq. Alasan: Groq adalah API inference stateless; menyimpan di Supabase
+    memberi kontrol penuh atas data (tujuan utama project).
 
 ## DD-03: Invite-only = Whitelist Manual
 Maksimal 10 akun. Registrasi divalidasi terhadap tabel `allowed_emails`.

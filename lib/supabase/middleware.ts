@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-const PROTECTED_ROUTES = ["/dashboard"];
+const PROTECTED_ROUTES = ["/dashboard", "/chat"];
 const AUTH_ROUTES = ["/login", "/register"];
 
 export async function updateSession(request: NextRequest) {
@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
   // Sudah login + buka login/register → lempar ke dashboard
   if (user && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/chat";
     return NextResponse.redirect(url);
   }
 
