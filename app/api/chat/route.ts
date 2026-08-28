@@ -72,29 +72,28 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Bangun messages array untuk Groq
-    // Format: jika ada image, pakai content array; jika tidak, pakai string
-    function buildGroqContent(
-      text: string,
-      img?: string | null
-    ): string | Array<{ type: string; text?: string; image_url?: { url: string } }> {
-      if (img) {
-        return [
-          { type: "text", text },
-          { type: "image_url", image_url: { url: img } },
-        ];
-      }
-      return text;
-    }
+    // Penting: HANYA gambar terkini yang dikirim. Gambar lama di-strip
+    // untuk menghindari "Too many images" (max 3) dan rate limit TPM.
+    // Batasi juga jumlah history agar tidak melebihi TPM limit.
+    const MAX_HISTORY_MESSAGES = 20;
+    const recentHistory = (history ?? []).slice(-MAX_HISTORY_MESSAGES);
 
     const groqMessages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...(history ?? []).map((m) => ({
+      // Riwayat: HANYA teks (gambar lama di-strip)
+      ...recentHistory.map((m) => ({
         role: m.role,
-        content: buildGroqContent(m.content ?? "", m.image_url),
+        content: m.content ?? "",
       })),
+      // Pesan saat ini: teks + gambar (jika ada)
       {
         role: "user" as const,
-        content: buildGroqContent(message.trim(), imageUrl),
+        content: imageUrl
+          ? [
+              { type: "text", text: message.trim() },
+              { type: "image_url", image_url: { url: imageUrl } },
+            ]
+          : message.trim(),
       },
     ];
 
@@ -120,13 +119,13 @@ export async function POST(request: NextRequest) {
       const errBody = await groqResponse.text();
       console.error("Groq API error:", groqResponse.status, errBody);
 
-      if (groqResponse.status === 429) {
+      if (groqResponse.status === 429 || groqResponse.status === 413) {
         return NextResponse.json(
           {
             error:
-              "Kuota AI habis (rate limit). Tunggu beberapa saat lalu coba lagi. Jika upload gambar, coba pakai gambar yang lebih kecil.",
+              "Permintaan terlalu besar atau kuota habis. Coba: (1) kurangi panjang pesan, (2) pakai gambar lebih kecil, (3) tunggu beberapa saat.",
           },
-          { status: 429 }
+          { status: groqResponse.status }
         );
       }
 
