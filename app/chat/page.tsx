@@ -511,6 +511,12 @@ export default function ChatPage() {
         <div className="p-3 border-t border-zinc-800">
           <div className="text-xs text-zinc-500 truncate mb-2">{email}</div>
           <button
+            onClick={() => router.push("/admin")}
+            className="w-full rounded-lg bg-zinc-800 hover:bg-zinc-700 py-2 text-xs transition-colors mb-2"
+          >
+            ⚙️ Admin
+          </button>
+          <button
             onClick={handleLogout}
             className="w-full rounded-lg bg-zinc-800 hover:bg-zinc-700 py-2 text-xs transition-colors"
           >
