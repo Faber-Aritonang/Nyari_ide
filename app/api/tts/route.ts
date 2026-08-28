@@ -4,8 +4,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Voice options untuk Orpheus Arabic Saudi (lebih cocok untuk Indonesia)
-const VOICES = ["noura", "lulwa", "aisha", "fahad", "sultan", "abdullah"] as const;
+// Voice options per model
+const EN_VOICES = ["hannah", "diana", "autumn", "austin", "daniel", "troy"] as const;
+const AR_VOICES = ["noura", "lulwa", "aisha", "fahad", "sultan", "abdullah"] as const;
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +29,21 @@ export async function POST(request: NextRequest) {
 
     // Batasi panjang teks (max 2000 karakter untuk TTS)
     const trimmedText = text.trim().slice(0, 2000);
-    const selectedVoice = VOICES.includes(voice) ? voice : "hannah";
+
+    // Pilih model & voice yang tepat
+    let model: string;
+    let selectedVoice: string;
+    if (EN_VOICES.includes(voice as typeof EN_VOICES[number])) {
+      model = "canopylabs/orpheus-v1-english";
+      selectedVoice = voice;
+    } else if (AR_VOICES.includes(voice as typeof AR_VOICES[number])) {
+      model = "canopylabs/orpheus-arabic-saudi";
+      selectedVoice = voice;
+    } else {
+      // Default: Arabic Saudi untuk Indonesia
+      model = "canopylabs/orpheus-arabic-saudi";
+      selectedVoice = "noura";
+    }
 
     // 3. Call Groq Orpheus TTS
     const groqResponse = await fetch(
@@ -40,7 +55,7 @@ export async function POST(request: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "canopylabs/orpheus-arabic-saudi",
+          model,
           input: trimmedText,
           voice: selectedVoice,
           response_format: "wav",
