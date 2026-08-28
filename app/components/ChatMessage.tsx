@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 export interface Message {
   role: "user" | "assistant";
   content: string;
+  image_url?: string | null;
 }
 
 export default function ChatMessage({ message }: { message: Message }) {
@@ -19,6 +20,15 @@ export default function ChatMessage({ message }: { message: Message }) {
             : "bg-zinc-800 text-zinc-100 border border-zinc-700"
         }`}
       >
+        {message.image_url && (
+          <div className="mb-2">
+            <img
+              src={message.image_url}
+              alt="Uploaded image"
+              className="rounded-lg max-w-full max-h-64 object-cover"
+            />
+          </div>
+        )}
         {isUser ? (
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (

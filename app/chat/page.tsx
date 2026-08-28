@@ -30,6 +30,7 @@ export default function ChatPage() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [models, setModels] = useState<ModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -130,16 +131,39 @@ export default function ChatPage() {
     }
   }
 
+  // Handle image selection
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validasi ukuran (maks 4MB)
+    if (file.size > 4 * 1024 * 1024) {
+      alert("Ukuran gambar maksimal 4MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
   // Send message
   async function sendMessage() {
-    if (!input.trim() || sending || !activeConvId) return;
+    if ((!input.trim() && !selectedImage) || sending || !activeConvId) return;
 
-    const userMessage = input.trim();
+    const userMessage = input.trim() || "(gambar)";
+    const imageToSend = selectedImage;
     setInput("");
+    setSelectedImage(null);
     setSending(true);
 
     // Add user message to UI immediately
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: userMessage, image_url: imageToSend },
+    ]);
 
     // Add empty assistant message placeholder
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
@@ -161,6 +185,7 @@ export default function ChatPage() {
           conversationId: activeConvId,
           message: userMessage,
           model: selectedModel,
+          imageUrl: imageToSend,
         }),
       });
 
@@ -371,7 +396,33 @@ export default function ChatPage() {
                     </span>
                   </div>
                 )}
+                {/* Image preview */}
+                {selectedImage && (
+                  <div className="mb-3 relative inline-block">
+                    <img
+                      src={selectedImage}
+                      alt="Preview"
+                      className="h-24 rounded-lg border border-zinc-700"
+                    />
+                    <button
+                      onClick={() => setSelectedImage(null)}
+                      className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-end gap-3">
+                  {/* Upload image button */}
+                  <label className="rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-3 text-sm cursor-pointer transition-colors" title="Upload gambar">
+                    🖼️
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                  </label>
                   <textarea
                     ref={textareaRef}
                     value={input}

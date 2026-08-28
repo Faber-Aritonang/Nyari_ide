@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Parse body request
-    const { conversationId, message, model } = await request.json();
+    const { conversationId, message, model, imageUrl } = await request.json();
 
     if (!conversationId || !message?.trim()) {
       return NextResponse.json(
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     // 4. Ambil riwayat pesan dari Supabase (server-side, bukan dari client)
     const { data: history } = await supabase
       .from("messages")
-      .select("role, content")
+      .select("role, content, image_url")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true });
 
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
       conversation_id: conversationId,
       role: "user",
       content: message.trim(),
+      image_url: imageUrl || null,
     });
 
     if (saveUserMsgError) {
@@ -71,10 +72,30 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Bangun messages array untuk Groq
+    // Format: jika ada image, pakai content array; jika tidak, pakai string
+    function buildGroqContent(
+      text: string,
+      img?: string | null
+    ): string | Array<{ type: string; text?: string; image_url?: { url: string } }> {
+      if (img) {
+        return [
+          { type: "text", text },
+          { type: "image_url", image_url: { url: img } },
+        ];
+      }
+      return text;
+    }
+
     const groqMessages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...(history ?? []).map((m) => ({ role: m.role, content: m.content })),
-      { role: "user" as const, content: message.trim() },
+      ...(history ?? []).map((m) => ({
+        role: m.role,
+        content: buildGroqContent(m.content ?? "", m.image_url),
+      })),
+      {
+        role: "user" as const,
+        content: buildGroqContent(message.trim(), imageUrl),
+      },
     ];
 
     // 7. Call Groq API dengan streaming
