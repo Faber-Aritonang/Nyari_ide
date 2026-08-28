@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { downloadImage } from "@/lib/image-gen";
-import { t } from "@/lib/i18n";
+import { t, getLang } from "@/lib/i18n";
 
 export interface Message {
   role: "user" | "assistant";
@@ -12,54 +12,79 @@ export interface Message {
   generated_image_url?: string | null;
 }
 
+/**
+ * Deteksi apakah teks mayoritas English atau Indonesia.
+ * Sederhana: hitung karakter Latin vs kata Indonesia umum.
+ */
+function isEnglishText(text: string): boolean {
+  const lower = text.toLowerCase();
+  // Kata Indonesia umum
+  const idWords = [
+    "adalah", "akan", "atau", "bahwa", "bisa", "dengan", "dari", "dalam",
+    "ini", "itu", "juga", "kami", "karena", "kita", "mereka", "tidak",
+    "saya", "untuk", "pada", "sudah", "belum", "bagaimana", "mengapa",
+    "apakah", "siapa", "dimana", "kapan", "jadi", "hal", "cara", "makanya",
+    "nih", "dong", "sih", "kah", "lah", "punya", "sangat", "lebih",
+  ];
+  const words = lower.split(/\s+/);
+  let idCount = 0;
+  for (const w of words) {
+    if (idWords.includes(w)) idCount++;
+  }
+  // Jika >= 20% kata adalah kata Indonesia → Indonesia
+  return idCount / words.length < 0.2;
+}
+
 export default function ChatMessage({ message }: { message: Message }) {
   const isUser = message.role === "user";
   const [speaking, setSpeaking] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  // Text-to-Speech using Groq Orpheus (natural voice)
-  async function handleTTS() {
-    // Jika sedang berbicara, hentikan
-    if (speaking && audioRef.current) {
+  // Bersihkan markdown untuk TTS
+  function cleanTextForTTS(text: string): string {
+    return text
+      .replace(/```[\s\S]*?```/g, " ")
+      .replace(/`[^`]+`/g, "")
+      .replace(/[#*_~\[\]()]/g, "")
+      .replace(/\n+/g, ". ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 2000);
+  }
+
+  // Stop TTS (baik Orpheus maupun Web Speech)
+  function stopTTS() {
+    if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
-      setSpeaking(false);
-      return;
     }
+    if (synthRef.current) {
+      window.speechSynthesis.cancel();
+      synthRef.current = null;
+    }
+    setSpeaking(false);
+  }
 
-    // Bersihkan markdown untuk TTS
-    const cleanText = message.content
-      .replace(/```[\s\S]*?```/g, " ") // strip code blocks
-      .replace(/`[^`]+`/g, "") // strip inline code
-      .replace(/[#*_~\[\]()]/g, "") // strip markdown symbols
-      .replace(/\n+/g, ". ") // newlines jadi jeda
-      .replace(/\s+/g, " ") // collapse whitespace
-      .trim();
-
-    if (!cleanText) return;
-
+  // TTS dengan Orpheus (English)
+  async function speakWithOrpheus(text: string) {
     try {
       setLoadingAudio(true);
-
-      // Fetch audio dari Orpheus TTS
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: cleanText, voice: "hannah" }),
+        body: JSON.stringify({ text, voice: "hannah" }),
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Gagal generate suara." }));
-        alert(err.error || "Gagal generate suara.");
-        setLoadingAudio(false);
+        // Fallback ke Web Speech API
+        speakWithWebSpeech(text);
         return;
       }
 
-      // Convert WAV ke blob dan play
       const audioBlob = await res.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
-
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
@@ -81,8 +106,65 @@ export default function ChatMessage({ message }: { message: Message }) {
 
       await audio.play();
     } catch {
+      // Fallback ke Web Speech API
+      speakWithWebSpeech(text);
+    }
+  }
+
+  // TTS dengan Web Speech API (Indonesia)
+  function speakWithWebSpeech(text: string) {
+    if (!("speechSynthesis" in window)) {
+      setLoadingAudio(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "id-ID";
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    const idVoice = voices.find((v) => v.lang.startsWith("id"));
+    if (idVoice) utterance.voice = idVoice;
+
+    utterance.onstart = () => {
+      setSpeaking(true);
+      setLoadingAudio(false);
+    };
+    utterance.onend = () => {
+      setSpeaking(false);
+      synthRef.current = null;
+    };
+    utterance.onerror = () => {
       setSpeaking(false);
       setLoadingAudio(false);
+      synthRef.current = null;
+    };
+
+    synthRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  // Main TTS handler
+  async function handleTTS() {
+    if (speaking) {
+      stopTTS();
+      return;
+    }
+
+    const cleanText = cleanTextForTTS(message.content);
+    if (!cleanText) return;
+
+    setLoadingAudio(true);
+
+    // Deteksi bahasa: English → Orpheus, Indonesia → Web Speech API
+    const lang = getLang();
+    const isEn = isEnglishText(cleanText);
+
+    if (isEn) {
+      await speakWithOrpheus(cleanText);
+    } else {
+      speakWithWebSpeech(cleanText);
     }
   }
 
@@ -154,7 +236,7 @@ export default function ChatMessage({ message }: { message: Message }) {
             </ReactMarkdown>
           </div>
         )}
-        {/* TTS button untuk pesan assistant (Orpheus) */}
+        {/* TTS button */}
         {!isUser && message.content && !message.generated_image_url && (
           <button
             onClick={handleTTS}
