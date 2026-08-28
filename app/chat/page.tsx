@@ -521,12 +521,14 @@ export default function ChatPage() {
         {/* User info + logout */}
         <div className="p-3 border-t border-border-theme">
           <div className="text-xs text-muted truncate mb-2">{email}</div>
-          <button
-            onClick={() => router.push("/admin")}
-            className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
-          >
-            ⚙️ Admin
-          </button>
+          {email === "faber.aritonang@gmail.com" && (
+            <button
+              onClick={() => router.push("/admin")}
+              className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
+            >
+              ⚙️ Admin
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors"

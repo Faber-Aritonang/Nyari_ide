@@ -22,6 +22,10 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  const ADMIN_EMAIL = "faber.aritonang@gmail.com";
 
   useEffect(() => {
     async function init() {
@@ -30,7 +34,14 @@ export default function AdminPage() {
         router.push("/login");
         return;
       }
-      setUserEmail(data.user.email ?? "");
+      const email = data.user.email ?? "";
+      setUserEmail(email);
+      if (email !== ADMIN_EMAIL) {
+        router.push("/chat");
+        return;
+      }
+      setIsAdmin(true);
+      setChecking(false);
       await fetchEmails();
     }
     init();
@@ -105,6 +116,16 @@ export default function AdminPage() {
       setError("Terjadi kesalahan");
     }
   }
+
+  if (checking) {
+    return (
+      <main className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <p className="text-muted">Memeriksa akses...</p>
+      </main>
+    );
+  }
+
+  if (!isAdmin) return null;
 
   return (
     <main className="min-h-screen bg-background text-foreground p-4 md:p-8">

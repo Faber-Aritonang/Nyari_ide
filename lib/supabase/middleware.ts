@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 const PROTECTED_ROUTES = ["/dashboard", "/chat", "/admin"];
 const AUTH_ROUTES = ["/login", "/register"];
+const ADMIN_EMAIL = "faber.aritonang@gmail.com";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -41,7 +42,14 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Sudah login + buka login/register → lempar ke dashboard
+  // Admin page: hanya admin email yang boleh akses
+  if (user && pathname.startsWith("/admin") && user.email !== ADMIN_EMAIL) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/chat";
+    return NextResponse.redirect(url);
+  }
+
+  // Sudah login + buka login/register → lempar ke chat
   if (user && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
     const url = request.nextUrl.clone();
     url.pathname = "/chat";
