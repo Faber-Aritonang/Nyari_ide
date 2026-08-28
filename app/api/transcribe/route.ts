@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // 3. Kirim ke Groq Whisper
     const whisperFormData = new FormData();
     whisperFormData.append("file", audioFile, "audio.webm");
-    whisperFormData.append("model", "whisper-large-v3");
+    whisperFormData.append("model", "whisper-large-v3-turbo");
     whisperFormData.append("language", "id"); // Default bahasa Indonesia
     whisperFormData.append("response_format", "json");
 

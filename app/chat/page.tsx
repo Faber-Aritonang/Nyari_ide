@@ -242,8 +242,8 @@ export default function ChatPage() {
   // Transcribe audio via Whisper
   async function transcribeAudio(audioBlob: Blob) {
     try {
+      setSending(true); // Tampilkan loading
       const formData = new FormData();
-      // Kirim dengan format yang benar
       const ext = audioBlob.type.includes("webm") ? "webm" : audioBlob.type.includes("mp4") ? "mp4" : "ogg";
       formData.append("audio", audioBlob, `recording.${ext}`);
 
@@ -265,6 +265,7 @@ export default function ChatPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : t("voiceError"));
     }
+    setSending(false);
   }
 
   // Generate image via Pollinations.ai
