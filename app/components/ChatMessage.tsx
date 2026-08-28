@@ -67,14 +67,16 @@ export default function ChatMessage({ message }: { message: Message }) {
     setSpeaking(false);
   }
 
-  // TTS dengan Orpheus (English)
-  async function speakWithOrpheus(text: string) {
+  // TTS dengan Orpheus
+  // English → Orpheus English (hannah)
+  // Indonesia → Orpheus Arabic Saudi (noura) — lebih cocok untuk ID
+  async function speakWithOrpheus(text: string, isEn: boolean) {
     try {
       setLoadingAudio(true);
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice: "hannah" }),
+        body: JSON.stringify({ text, voice: isEn ? "hannah" : "noura" }),
       });
 
       if (!res.ok) {
@@ -161,11 +163,8 @@ export default function ChatMessage({ message }: { message: Message }) {
     const lang = getLang();
     const isEn = isEnglishText(cleanText);
 
-    if (isEn) {
-      await speakWithOrpheus(cleanText);
-    } else {
-      speakWithWebSpeech(cleanText);
-    }
+    // Semua bahasa pakai Orpheus (Arabic Saudi untuk ID, English untuk EN)
+    await speakWithOrpheus(cleanText, isEn);
   }
 
   return (

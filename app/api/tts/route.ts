@@ -4,8 +4,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Voice options untuk Orpheus
-const VOICES = ["hannah", "diana", "autumn", "austin", "daniel", "troy"] as const;
+// Voice options untuk Orpheus Arabic Saudi (lebih cocok untuk Indonesia)
+const VOICES = ["noura", "lulwa", "aisha", "fahad", "sultan", "abdullah"] as const;
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "canopylabs/orpheus-v1-english",
+          model: "canopylabs/orpheus-arabic-saudi",
           input: trimmedText,
           voice: selectedVoice,
           response_format: "wav",
