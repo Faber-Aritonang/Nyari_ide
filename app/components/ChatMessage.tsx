@@ -6,11 +6,13 @@ import { downloadImage } from "@/lib/image-gen";
 import { t } from "@/lib/i18n";
 
 export interface Message {
+  id?: string;
   role: "user" | "assistant";
   content: string;
   image_url?: string | null;
   generated_image_url?: string | null;
   isError?: boolean;
+  reaction?: "like" | "dislike" | null;
 }
 
 const EN_VOICES = ["hannah", "diana", "autumn", "austin", "daniel", "troy"];
@@ -52,11 +54,13 @@ function cleanText(text: string): string {
 
 interface ChatMessageProps {
   message: Message;
+  messageId?: string;
   onRetry?: () => void;
   onEdit?: (newContent: string) => void;
+  onReaction?: (messageId: string, reaction: "like" | "dislike" | null) => void;
 }
 
-export default function ChatMessage({ message, onRetry, onEdit }: ChatMessageProps) {
+export default function ChatMessage({ message, messageId, onRetry, onEdit, onReaction }: ChatMessageProps) {
   const isUser = message.role === "user";
   const [speaking, setSpeaking] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
@@ -64,6 +68,8 @@ export default function ChatMessage({ message, onRetry, onEdit }: ChatMessagePro
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(message.content);
+  const [reaction, setReaction] = useState<"like" | "dislike" | null>(message.reaction ?? null);
+  const [reactionLoading, setReactionLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const textLang = detectLang(cleanText(message.content));
@@ -214,6 +220,36 @@ export default function ChatMessage({ message, onRetry, onEdit }: ChatMessagePro
         {/* Action buttons for assistant messages */}
         {!isUser && message.content && !message.isError && !message.generated_image_url && (
           <div className="mt-2 flex items-center gap-2 flex-wrap">
+            {/* Reaction buttons */}
+            {messageId && onReaction && (
+              <div className="flex items-center gap-1 mr-2">
+                <button
+                  onClick={() => {
+                    const newReaction = reaction === "like" ? null : "like";
+                    setReaction(newReaction);
+                    onReaction(messageId, newReaction);
+                  }}
+                  disabled={reactionLoading}
+                  className={`text-sm transition-colors ${reaction === "like" ? "text-green-500" : "text-muted hover:text-green-500"}`}
+                  title="Like"
+                >
+                  👍
+                </button>
+                <button
+                  onClick={() => {
+                    const newReaction = reaction === "dislike" ? null : "dislike";
+                    setReaction(newReaction);
+                    onReaction(messageId, newReaction);
+                  }}
+                  disabled={reactionLoading}
+                  className={`text-sm transition-colors ${reaction === "dislike" ? "text-red-500" : "text-muted hover:text-red-500"}`}
+                  title="Dislike"
+                >
+                  👎
+                </button>
+              </div>
+            )}
+
             {/* Copy button */}
             <button
               onClick={handleCopy}

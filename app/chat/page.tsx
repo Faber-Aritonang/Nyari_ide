@@ -46,6 +46,15 @@ export default function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [lang, setLangState] = useState<Lang>(getLang());
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Array<{
+    message_id: string;
+    role: string;
+    content: string;
+    conversation_id: string;
+    conversation_title: string;
+  }> | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -312,6 +321,47 @@ export default function ChatPage() {
       });
     }
     setSending(false);
+  }
+
+  // Handle reaction (like/dislike)
+  async function handleReaction(messageId: string, reaction: "like" | "dislike" | null) {
+    try {
+      await fetch(`/api/messages/${messageId}/reaction`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reaction }),
+      });
+    } catch (err) {
+      console.error("Failed to update reaction:", err);
+    }
+  }
+
+  // Search messages
+  async function handleSearch(query: string) {
+    if (!query.trim()) {
+      setSearchResults(null);
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSearchResults(data.results);
+      }
+    } catch (err) {
+      console.error("Search error:", err);
+    }
+    setSearchLoading(false);
+  }
+
+  // Navigate to conversation and highlight message
+  function navigateToMessage(conversationId: string) {
+    setActiveConvId(conversationId);
+    setSearchResults(null);
+    setSearchQuery("");
+    setSidebarOpen(false);
   }
 
   // Send message
@@ -700,6 +750,63 @@ export default function ChatPage() {
           </div>
         </div>
 
+        {/* Search bar */}
+        <div className="p-3 border-b border-border-theme">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                handleSearch(e.target.value);
+              }}
+              placeholder={lang === "id" ? "Cari pesan..." : "Search messages..."}
+              className="w-full bg-input-bg border border-border-theme rounded-lg px-3 py-2 text-sm pl-8 focus:outline-none focus:border-blue-500 placeholder:text-muted"
+            />
+            <span className="absolute left-2.5 top-2.5 text-muted text-sm">🔍</span>
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setSearchResults(null);
+                }}
+                className="absolute right-2.5 top-2.5 text-muted hover:text-foreground text-sm"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Search results */}
+        {searchResults && (
+          <div className="px-3 py-2 border-b border-border-theme max-h-64 overflow-y-auto">
+            <p className="text-xs text-muted mb-2">
+              {searchResults.length} {lang === "id" ? "hasil" : "results"}
+            </p>
+            {searchResults.length === 0 ? (
+              <p className="text-xs text-muted text-center py-2">
+                {lang === "id" ? "Tidak ada hasil" : "No results found"}
+              </p>
+            ) : (
+              searchResults.map((result) => (
+                <button
+                  key={result.message_id}
+                  onClick={() => navigateToMessage(result.conversation_id)}
+                  className="w-full text-left px-2 py-1.5 rounded hover:bg-surface-hover mb-1 transition-colors"
+                >
+                  <p className="text-xs text-muted-light truncate">
+                    {result.conversation_title}
+                  </p>
+                  <p className="text-xs text-muted truncate mt-0.5">
+                    {result.content.slice(0, 60)}...
+                  </p>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+
         {/* New conversation button */}
         <div className="p-3">
           <button
@@ -839,8 +946,10 @@ export default function ChatPage() {
                   <ChatMessage
                     key={i}
                     message={msg}
+                    messageId={msg.id}
                     onRetry={!sending && msg.role === "assistant" && i === messages.length - 1 ? handleRegenerate : undefined}
                     onEdit={msg.role === "user" && !sending ? (newContent) => handleEditMessage(i, newContent) : undefined}
+                    onReaction={msg.role === "assistant" ? handleReaction : undefined}
                   />
                 ))}
                 <div ref={messagesEndRef} />
