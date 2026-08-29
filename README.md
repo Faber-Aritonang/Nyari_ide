@@ -1,5 +1,10 @@
 # Nyari_ide 🧠💡
 
+![Version](https://img.shields.io/badge/version-v1.1-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![Supabase](https://img.shields.io/badge/Supabase-Database-3FCF8E)
+
 **Nyari_ide** (dari bahasa gaul: *"nyari ide"* = mencari ide) adalah sebuah proyek
 membangun **aplikasi web chat AI multimodal berbasis model LLM opensource** —
 seperti ChatGPT versi pribadi, tapi:
@@ -29,6 +34,10 @@ Pengguna yang sudah login dapat:
 | 🌐 Bilingual | Antarmuka dalam Bahasa Indonesia & English |
 | 🌓 Dark/Light mode | Toggle tema gelap/terang, tersimpan otomatis |
 | 🗂️ Riwayat chat | Percakapan tersimpan per user di database, bisa dibuka dari device mana pun |
+| 🔄 Regenerate | Regenerasi ide dengan prompt yang sama |
+| 📋 Copy & Edit | Copy ide ke clipboard / edit langsung di chat |
+| 📄 Export | Export percakapan ke Markdown / PDF |
+| ⌨️ Keyboard Shortcuts | Ctrl+Enter kirim, Ctrl+N baru, Ctrl+E export, Ctrl+D hapus |
 | 📱 Mobile | Responsive di HP & desktop |
 
 ## 🚫 Kenapa Proyek Ini Dibuat?
@@ -58,9 +67,11 @@ Semua API key tersimpan **hanya di sisi server** — tidak pernah terekspos di b
 
 ## 📊 Status Proyek
 
-> **v1.0 RILIS!** ✅ Semua fase sudah selesai dan **berhasil berjalan dengan baik**.
+> **v1.1 RILIS!** ✅ Update besar dengan fitur baru: regenerasi, copy, edit, export, dan keyboard shortcuts.
 
 Aplikasi ini sudah bisa dicoba langsung di: **[nyari-ide.vercel.app](https://nyari-ide.vercel.app)**
+
+**Link Release:** [v1.1 Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v1.1)
 
 ### 🧪 Mau Coba?
 
