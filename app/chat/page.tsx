@@ -756,6 +756,12 @@ export default function ChatPage() {
           >
             ⚙️ {t("settings")}
           </button>
+          <button
+            onClick={() => router.push("/rag/documents")}
+            className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
+          >
+            📚 {lang === "id" ? "Dokumen" : "Documents"}
+          </button>
           {email === "faber.aritonang@gmail.com" && (
             <button
               onClick={() => router.push("/admin")}

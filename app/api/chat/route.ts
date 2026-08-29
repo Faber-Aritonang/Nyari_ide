@@ -83,10 +83,26 @@ export async function POST(request: NextRequest) {
       customInstructions = userSettings.instructions;
     }
 
-    // Gabungkan system prompt dengan custom instructions
-    const finalSystemPrompt = customInstructions
-      ? `${SYSTEM_PROMPT}\n\n[Instruksi kustom dari user]:\n${customInstructions}`
-      : SYSTEM_PROMPT;
+    // 7. RAG: Retrieve relevant context dari documents & conversations
+    let ragContext = "";
+    try {
+      const { retrieveContext } = await import("@/lib/rag/search");
+      ragContext = await retrieveContext(message.trim(), user.id, 1500);
+    } catch (err) {
+      console.error("RAG retrieval error (non-critical):", err);
+      // RAG gagal, lanjut tanpa context
+    }
+
+    // Gabungkan system prompt dengan custom instructions dan RAG context
+    let finalSystemPrompt = SYSTEM_PROMPT;
+    
+    if (customInstructions) {
+      finalSystemPrompt += `\n\n[Instruksi kustom dari user]:\n${customInstructions}`;
+    }
+    
+    if (ragContext) {
+      finalSystemPrompt += `\n\n[Konteks relevan dari dokumen/percakapan sebelumnya]:\n${ragContext}\n\nGunakan konteks di atas jika relevan dengan pertanyaan user. Jika tidak relevan, jawab seperti biasa.`;
+    }
 
     // 7. Bangun messages array untuk Groq
     // Penting: HANYA konten terkini yang dikirim. Gambar/file lama di-strip
@@ -217,6 +233,17 @@ export async function POST(request: NextRequest) {
                     role: "assistant",
                     content: fullContent,
                   });
+
+                  // RAG: Index conversation untuk pencarian masa depan
+                  try {
+                    const { indexConversation } = await import("@/lib/rag/search");
+                    await indexConversation(conversationId, user.id, [
+                      { role: "user", content: message.trim() },
+                      { role: "assistant", content: fullContent },
+                    ]);
+                  } catch (err) {
+                    console.error("RAG indexing error (non-critical):", err);
+                  }
                 }
                 controller.enqueue(encoder.encode("data: [DONE]\n\n"));
                 controller.close();
