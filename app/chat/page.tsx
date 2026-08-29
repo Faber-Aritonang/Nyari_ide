@@ -43,7 +43,7 @@ export default function ChatPage() {
     content: string;
   } | null>(null);
   const [imageGenMode, setImageGenMode] = useState(false);
-  const [imageProvider, setImageProvider] = useState<ImageProvider>("gemini");
+  const [imageProvider, setImageProvider] = useState<ImageProvider>("pollinations");
   const [recording, setRecording] = useState(false);
   const [lang, setLangState] = useState<Lang>(getLang());
   const [sidebarOpen, setSidebarOpen] = useState(false);

@@ -59,8 +59,10 @@ async function generateWithGemini(
   }
 
   try {
+    // Use gemini-2.5-flash-image for image generation
+    const model = "gemini-2.5-flash-image";
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -282,21 +284,21 @@ export async function generateImageHybrid(
   }
 
   // Auto fallback mode
-  // Try Gemini first (free)
-  const geminiResult = await generateWithGemini(prompt, size);
-  if (geminiResult.success) {
-    return geminiResult;
-  }
-
-  console.log("[ImageGen] Gemini failed, trying Pollinations...");
-
-  // Fallback to Pollinations (free)
+  // Try Pollinations first (free, no quota issues)
   const pollinationsResult = await generateWithPollinations(prompt, size, seed);
   if (pollinationsResult.success) {
     return pollinationsResult;
   }
 
-  console.log("[ImageGen] Pollinations failed, trying FLUX...");
+  console.log("[ImageGen] Pollinations failed, trying Gemini...");
+
+  // Fallback to Gemini (free, but quota limited)
+  const geminiResult = await generateWithGemini(prompt, size);
+  if (geminiResult.success) {
+    return geminiResult;
+  }
+
+  console.log("[ImageGen] Gemini failed, trying FLUX...");
 
   // Fallback to FLUX (paid)
   const fluxResult = await generateWithFLUX(prompt, size);
