@@ -1,0 +1,59 @@
+========================================
+TEMPLATE: IDE BISNIS
+========================================
+Isi bagian-bagian di bawah ini, lalu simpan sebagai .txt
+========================================
+
+NAMA IDE:
+[Contoh: Platform Belajar Coding Gratis]
+
+DESKRIPSI SINGKAT:
+[1-2 kalimat tentang ide ini]
+
+MASALAH YANG DISELESAIKAN:
+- [Masalah 1]
+- [Masalah 2]
+- [Masalah 3]
+
+TARGET USER:
+- [Segmen 1]
+- [Segmen 2]
+- [Segmen 3]
+
+SOLUSI:
+- [Fitur utama 1]
+- [Fitur utama 2]
+- [Fitur utama 3]
+
+NILAI JUAL (UNIQUE VALUE):
+- [Kelebihan 1]
+- [Kelebihan 2]
+
+MONETISASI:
+- [Cara dapat uang 1]
+- [Cara dapat uang 2]
+
+KOMPETITOR:
+- [Kompetitor 1] - [kelebihan/kekurangan]
+- [Kompetitor 2] - [kelebihan/kekurangan]
+
+TARGET MARKET:
+- [Negara/wilayah]
+- [Estimasi jumlah user]
+
+TIM/YANG DIBUTUHKAN:
+- [Role 1]
+- [Role 2]
+
+ANGGARAN AWAL:
+- [Estimasi biaya]
+
+TIMELINE:
+- [Fase 1: ...]
+- [Fase 2: ...]
+
+STATUS:
+[ Ide / Riset / Prototipe / Berjalan / Selesai ]
+
+CATATAN TAMBAHAN:
+- [Catatan lain]
