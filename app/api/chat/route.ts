@@ -106,8 +106,9 @@ export async function POST(request: NextRequest) {
 
     // 7. Bangun messages array untuk Groq
     // Penting: HANYA konten terkini yang dikirim. Gambar/file lama di-strip
-    // untuk menghindari rate limit TPM.
-    const MAX_HISTORY_MESSAGES = 20;
+    // untuk menghindari rate limit TPM (8000 TPM untuk free tier).
+    const MAX_HISTORY_MESSAGES = 10; // Kurangi dari 20 ke 10
+    const MAX_CHARS_PER_MESSAGE = 500; // Limit chars per message
     const recentHistory = (history ?? []).slice(-MAX_HISTORY_MESSAGES);
 
     // Bangun konteks user message: teks + gambar + file (jika ada)
@@ -129,12 +130,20 @@ export async function POST(request: NextRequest) {
       userParts.push({ type: "image_url", image_url: { url: imageUrl } });
     }
 
+    // Helper: truncate message to limit chars
+    const truncate = (text: string, maxLen: number) => 
+      text.length > maxLen ? text.slice(0, maxLen) + '...' : text;
+
+    // Limit system prompt size
+    const MAX_SYSTEM_PROMPT = 2000;
+    const truncatedSystemPrompt = truncate(finalSystemPrompt, MAX_SYSTEM_PROMPT);
+
     const groqMessages = [
-      { role: "system", content: finalSystemPrompt },
-      // Riwayat: HANYA teks (gambar & file lama di-strip)
+      { role: "system", content: truncatedSystemPrompt },
+      // Riwayat: HANYA teks (gambar & file lama di-strip), truncated
       ...recentHistory.map((m) => ({
         role: m.role,
-        content: m.content ?? "",
+        content: truncate(m.content ?? "", MAX_CHARS_PER_MESSAGE),
       })),
       // Pesan saat ini: teks [+ file] [+ gambar]
       {
@@ -168,11 +177,21 @@ export async function POST(request: NextRequest) {
       const errBody = await groqResponse.text();
       console.error("Groq API error:", groqResponse.status, errBody);
 
-      if (groqResponse.status === 429 || groqResponse.status === 413) {
+      if (groqResponse.status === 429) {
         return NextResponse.json(
           {
             error:
-              "Permintaan terlalu besar atau kuota habis. Coba: (1) kurangi panjang pesan, (2) pakai gambar lebih kecil, (3) tunggu beberapa saat.",
+              "⚡ Kuota Groq harian habis. Coba: (1) tunggu beberapa jam, (2) mulai percakapan baru, (3) upgrade Groq plan.",
+          },
+          { status: groqResponse.status }
+        );
+      }
+
+      if (groqResponse.status === 413) {
+        return NextResponse.json(
+          {
+            error:
+              "📏 Pesan terlalu panjang. Coba: (1) mulai percakapan baru, (2) kurangi panjang pesan.",
           },
           { status: groqResponse.status }
         );
