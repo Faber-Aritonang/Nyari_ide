@@ -3,8 +3,8 @@
 > ⭐ FILE KUNCI KONTINUITAS. Update setiap akhir sesi kerja!
 > AI assistant cukup dibekali file ini untuk melanjutkan project.
 
-Last updated: 28 Agustus 2026
-Current phase: v1.0 SELESAI ✅
+Last updated: 29 Agustus 2026
+Current phase: v1.1 SELESAI ✅
 
 ## Ringkasan Project
 Webpage chat AI multimodal (text, image, voice), LLM opensource via Groq API,
@@ -39,9 +39,10 @@ autentikasi email+password (Supabase).
 ✅ FASE 1 — Autentikasi (SELESAI)
 ✅ FASE 2 — Chat Text (SELESAI)
 ✅ FASE 3 — Multimodal (SELESAI)
-✅ FASE 4 — Polesan (SELESAI) ← v1.0 RILIS!
+✅ FASE 4 — Polesan (SELESAI)
+✅ FASE 5 — v1.1 Update (SELESAI) ← v1.1 RILIS!
 
-### Fitur Lengkap v1.0:
+### Fitur Lengkap v1.1:
 | Fitur | Teknologi | Biaya |
 |---|---|---|
 | 💬 Chat text streaming | Qwen 3.8 27B via Groq | Gratis |
@@ -51,8 +52,13 @@ autentikasi email+password (Supabase).
 | 🎨 Text-to-image | GPT Image 2 via Pollinations.ai | Gratis |
 | 🎤 Voice input | Whisper Large v3 Turbo (Groq) | Gratis |
 | 🔊 Text-to-speech | Orpheus EN + Arabic SA (Groq) | Gratis |
+| 🔄 Regenerate | Ulangi jawaban AI dengan prompt sama | Gratis |
+| 📋 Copy to Clipboard | Salin jawaban dengan satu klik | - |
+| ✏️ Edit Message | Edit pesan, AI respon ulang | Gratis |
+| 📄 Export Chat | Export ke Markdown / PDF | - |
+| ⌨️ Keyboard Shortcuts | Ctrl+Enter, Ctrl+N, Ctrl+E, Ctrl+D, Escape | - |
 | 🌐 Toggle bahasa ID/EN | lib/i18n.ts (persist localStorage) | - |
-| 🌓 Dark/Light mode | CSS variables + ThemeProvider | - |
+| 🌓 Dark/Light mode | CSS variables + ThemeProvider (persist) | - |
 | 📱 Responsive mobile | Tailwind CSS + hamburger menu | - |
 | 👤 Admin whitelist | /admin — tambah/hapus email | Gratis |
 | 🔒 Admin restriction | Hanya faber.aritonang@gmail.com | - |
@@ -112,15 +118,23 @@ middleware.ts                       — Next.js middleware entry point
 - Text-to-image: Pollinations.ai GPT Image 2 (gratis, tanpa API key)
 - Admin: hanya email faber.aritonang@gmail.com yang bisa akses /admin
 - Dark/Light mode: CSS variables + ThemeProvider, persist di localStorage
+- Regenerate: POST /api/conversations/[id]/regenerate → ulang jawaban terakhir
+- Edit message: user edit pesan lama → semua pesan setelahnya dihapus, AI respon baru
+- Export: client-side generate Markdown/PDF dari array messages
+- Keyboard shortcuts: event listener global di chat page (Ctrl+Enter, Ctrl+N, Ctrl+E, Ctrl+D, Escape)
 
 ## Known Issues
 - Next.js 16 warning "middleware convention is deprecated, use proxy instead" — aman diabaikan
 - Groq free tier TPM limit ketat (8000 TPM untuk qwen) — gambar harus dikompres
 - Orpheus TTS rate limit: jangan klik Listen terlalu cepat (tunggu 10-15 detik)
+- Export PDF menggunakan html2canvas + jsp di client-side (ukuran bundle agak besar)
 
 ## Masa Depan (Backlog)
 - RAG: pgvector + embedding Hugging Face untuk Q&A dokumen spesifik
-- Regenerasi jawaban, edit pesan
+- Share link: bagikan percakapan via URL unik
+- Image gallery: galeri gambar yang dihasilkan AI
+- Custom instructions: preferensi user untuk AI (sistem prompt kustom)
+- Multi-language TTS: tambah suara bahasa lain
 
 ## Untuk AI Assistant Baru
 Jika chat sebelumnya hilang: baca README.md, ROADMAP.md,
