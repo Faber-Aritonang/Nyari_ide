@@ -38,6 +38,7 @@ Pengguna yang sudah login dapat:
 | 📋 Copy & Edit | Copy ide ke clipboard / edit langsung di chat |
 | 📄 Export | Export percakapan ke Markdown / PDF |
 | ⌨️ Keyboard Shortcuts | Ctrl+Enter kirim, Ctrl+N baru, Ctrl+E export, Ctrl+D hapus |
+| ⚙️ Custom Instructions | Atur bagaimana AI harus merespons Anda (per user) |
 | 📱 Mobile | Responsive di HP & desktop |
 
 ## 🚫 Kenapa Proyek Ini Dibuat?
@@ -67,11 +68,15 @@ Semua API key tersimpan **hanya di sisi server** — tidak pernah terekspos di b
 
 ## 📊 Status Proyek
 
-> **v1.1 RILIS!** ✅ Update besar dengan fitur baru: regenerasi, copy, edit, export, dan keyboard shortcuts.
+> **v2.0 RILIS!** ✅ Custom Instructions — user bisa mengatur bagaimana AI merespons.
 
 Aplikasi ini sudah bisa dicoba langsung di: **[nyari-ide.vercel.app](https://nyari-ide.vercel.app)**
 
-**Link Release:** [v1.1 Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v1.1)
+| Version | Release |
+|---------|---------|
+| v2.0 | [Custom Instructions](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.0) |
+| v1.1 | [Regenerasi, Copy, Edit, Export, Keyboard Shortcuts](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v1.1) |
+| v1.0 | [Initial Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v1.0) |
 
 ### 🧪 Mau Coba?
 
