@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import ChatMessage, { type Message } from "@/app/components/ChatMessage";
 import { compressImage } from "@/lib/image-utils";
 import { readTextFile, extractPdfText } from "@/lib/file-utils";
-import { generateImageUrl } from "@/lib/image-gen";
+import { generateImageUrl, generateImageHybrid, IMAGE_PROVIDERS, type ImageProvider } from "@/lib/image-gen";
 import { startRecording, stopRecording } from "@/lib/voice-utils";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme-context";
@@ -43,6 +43,7 @@ export default function ChatPage() {
     content: string;
   } | null>(null);
   const [imageGenMode, setImageGenMode] = useState(false);
+  const [imageProvider, setImageProvider] = useState<ImageProvider>("gemini");
   const [recording, setRecording] = useState(false);
   const [lang, setLangState] = useState<Lang>(getLang());
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -277,7 +278,7 @@ export default function ChatPage() {
     setSending(false);
   }
 
-  // Generate image
+  // Generate image (Hybrid mode)
   async function handleGenerateImage() {
     if (!input.trim() || sending || !activeConvId) return;
 
@@ -286,29 +287,54 @@ export default function ChatPage() {
     setSending(true);
     setImageGenMode(false);
 
-    setMessages((prev) => [...prev, { role: "user", content: `[Generate Gambar] ${prompt}` }]);
-    setMessages((prev) => [...prev, { role: "assistant", content: `🎨 ${t("generating")}` }]);
+    setMessages((prev) => [...prev, { role: "user", content: `[🎨 ${imageProvider.toUpperCase()}] ${prompt}` }]);
+    setMessages((prev) => [...prev, { role: "assistant", content: `🎨 Generating with ${imageProvider}...` }]);
 
     try {
-      const url = generateImageUrl(prompt, "1024");
-      const img = new Image();
-      img.src = url;
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error("Gagal generate gambar"));
-        setTimeout(() => reject(new Error("Timeout")), 60000);
+      // Use hybrid generation
+      const result = await generateImageHybrid(prompt, {
+        provider: imageProvider,
+        size: "1024",
       });
 
-      setMessages((prev) => {
-        const updated = [...prev];
-        const lastIdx = updated.length - 1;
-        updated[lastIdx] = {
-          role: "assistant",
-          content: `🎨 Gambar generated dari prompt: "${prompt}"`,
-          generated_image_url: url,
-        };
-        return updated;
-      });
+      if (result.success && result.url) {
+        // For data URLs (Gemini), use directly
+        // For external URLs (Pollinations/FLUX), verify load
+        if (result.url.startsWith("data:")) {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            updated[lastIdx] = {
+              role: "assistant",
+              content: `🎨 Generated with ${result.provider}\nPrompt: "${prompt}"`,
+              generated_image_url: result.url,
+            };
+            return updated;
+          });
+        } else {
+          // Verify image loads (Pollinations/FLUX)
+          const img = new Image();
+          img.src = result.url;
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error("Failed to load image"));
+            setTimeout(() => reject(new Error("Timeout")), 60000);
+          });
+
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            updated[lastIdx] = {
+              role: "assistant",
+              content: `🎨 Generated with ${result.provider}\nPrompt: "${prompt}"`,
+              generated_image_url: result.url,
+            };
+            return updated;
+          });
+        }
+      } else {
+        throw new Error(result.error || "Generation failed");
+      }
     } catch (err) {
       setMessages((prev) => {
         const updated = [...prev];
@@ -1009,11 +1035,26 @@ export default function ChatPage() {
                       📎
                       <input type="file" accept=".txt,.js,.ts,.py,.json,.md,.html,.css,.sql,.yaml,.yml,.xml,.csv,.log,.env,.config,.pdf,text/*" onChange={handleFileSelect} className="hidden" />
                     </label>
-                    <button
-                      onClick={() => { setImageGenMode(!imageGenMode); setSelectedImage(null); setSelectedFile(null); }}
-                      className={`rounded-xl border px-2.5 md:px-3 py-2.5 md:py-3 text-sm transition-colors ${imageGenMode ? "bg-purple-600 border-purple-500 text-white" : "bg-input-bg hover:bg-surface-hover border-border-theme"}`}
-                      title={t("imageGenMode")}
-                    >🎨</button>
+                    <div className="relative">
+                      <button
+                        onClick={() => { setImageGenMode(!imageGenMode); setSelectedImage(null); setSelectedFile(null); }}
+                        className={`rounded-xl border px-2.5 md:px-3 py-2.5 md:py-3 text-sm transition-colors ${imageGenMode ? "bg-purple-600 border-purple-500 text-white" : "bg-input-bg hover:bg-surface-hover border-border-theme"}`}
+                        title={t("imageGenMode")}
+                      >🎨</button>
+                      {imageGenMode && (
+                        <select
+                          value={imageProvider}
+                          onChange={(e) => setImageProvider(e.target.value as ImageProvider)}
+                          className="absolute -bottom-8 left-0 z-10 bg-input-bg border border-border-theme rounded px-1 py-0.5 text-xs text-foreground w-40"
+                        >
+                          {IMAGE_PROVIDERS.map((p) => (
+                            <option key={p.value} value={p.value}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
                     <button
                       onClick={handleVoiceInput}
                       className={`rounded-xl border px-2.5 md:px-3 py-2.5 md:py-3 text-sm transition-colors ${recording ? "bg-red-600 border-red-500 text-white animate-pulse" : "bg-input-bg hover:bg-surface-hover border-border-theme"}`}
