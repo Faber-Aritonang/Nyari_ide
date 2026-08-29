@@ -77,6 +77,18 @@ const strings = {
     saved: "Tersimpan!",
     maxChars: "Maks 2000 karakter",
 
+    // Share Link
+    share: "Bagikan",
+    shareChat: "Bagikan Percakapan",
+    shareLinkCopied: "Link share sudah tersalin!",
+    shareLinkDeleted: "Link share sudah dihapus.",
+    sharePublic: "Publik (siapa saja bisa melihat)",
+    sharePrivate: "Private (hanya Anda)",
+    createShareLink: "Buat Link Share",
+    deleteShareLink: "Hapus Link Share",
+    copyLink: "Salin Link",
+    shareVia: "Bagikan via:",
+
     // Actions v1.1
     copyMessage: "Salin pesan",
     copied: "Tersalin!",
@@ -165,6 +177,18 @@ const strings = {
     saving: "Saving...",
     saved: "Saved!",
     maxChars: "Max 2000 characters",
+
+    // Share Link
+    share: "Share",
+    shareChat: "Share Conversation",
+    shareLinkCopied: "Share link copied!",
+    shareLinkDeleted: "Share link deleted.",
+    sharePublic: "Public (anyone can view)",
+    sharePrivate: "Private (only you)",
+    createShareLink: "Create Share Link",
+    deleteShareLink: "Delete Share Link",
+    copyLink: "Copy Link",
+    shareVia: "Share via:",
 
     // Actions v1.1
     copyMessage: "Copy message",

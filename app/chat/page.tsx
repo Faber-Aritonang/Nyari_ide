@@ -635,6 +635,28 @@ export default function ChatPage() {
     URL.revokeObjectURL(url);
   }
 
+  async function handleShare() {
+    if (!activeConvId) return;
+
+    try {
+      const res = await fetch(`/api/conversations/${activeConvId}/share`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_public: true }),
+      });
+
+      if (!res.ok) throw new Error("Failed");
+
+      const data = await res.json();
+
+      // Copy URL ke clipboard
+      await navigator.clipboard.writeText(data.url);
+      alert(t("shareLinkCopied"));
+    } catch {
+      alert("Failed to create share link");
+    }
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push("/login");
@@ -743,13 +765,22 @@ export default function ChatPage() {
             </button>
           )}
           {activeConvId && messages.length > 0 && (
-            <button
-              onClick={exportChat}
-              className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
-              title={t("exportMd")}
-            >
-              📥 {t("exportChat")}
-            </button>
+            <>
+              <button
+                onClick={exportChat}
+                className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
+                title={t("exportMd")}
+              >
+                📥 {t("exportChat")}
+              </button>
+              <button
+                onClick={handleShare}
+                className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
+                title={t("shareChat")}
+              >
+                🔗 {t("share")}
+              </button>
+            </>
           )}
           <button
             onClick={handleLogout}
