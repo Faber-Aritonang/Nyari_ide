@@ -4,7 +4,7 @@
 > AI assistant cukup dibekali file ini untuk melanjutkan project.
 
 Last updated: 29 Agustus 2026
-Current phase: v1.1 SELESAI ✅
+Current phase: v2.0 SELESAI ✅
 
 ## Ringkasan Project
 Webpage chat AI multimodal (text, image, voice), LLM opensource via Groq API,
@@ -40,9 +40,10 @@ autentikasi email+password (Supabase).
 ✅ FASE 2 — Chat Text (SELESAI)
 ✅ FASE 3 — Multimodal (SELESAI)
 ✅ FASE 4 — Polesan (SELESAI)
-✅ FASE 5 — v1.1 Update (SELESAI) ← v1.1 RILIS!
+✅ FASE 5 — v1.1 Update (SELESAI)
+✅ FASE 6 — v2.0 Update (SELESAI) ← v2.0 RILIS!
 
-### Fitur Lengkap v1.1:
+### Fitur Lengkap v2.0:
 | Fitur | Teknologi | Biaya |
 |---|---|---|
 | 💬 Chat text streaming | Qwen 3.8 27B via Groq | Gratis |
@@ -57,6 +58,8 @@ autentikasi email+password (Supabase).
 | ✏️ Edit Message | Edit pesan, AI respon ulang | Gratis |
 | 📄 Export Chat | Export ke Markdown / PDF | - |
 | ⌨️ Keyboard Shortcuts | Ctrl+Enter, Ctrl+N, Ctrl+E, Ctrl+D, Escape | - |
+| ⚙️ Custom Instructions | Atur bagaimana AI merespons (per user) | Gratis |
+| 🔗 Share Link | Bagikan percakapan via URL unik | Gratis |
 | 🌐 Toggle bahasa ID/EN | lib/i18n.ts (persist localStorage) | - |
 | 🌓 Dark/Light mode | CSS variables + ThemeProvider (persist) | - |
 | 📱 Responsive mobile | Tailwind CSS + hamburger menu | - |
@@ -131,10 +134,11 @@ middleware.ts                       — Next.js middleware entry point
 
 ## Masa Depan (Backlog)
 - RAG: pgvector + embedding Hugging Face untuk Q&A dokumen spesifik
-- Share link: bagikan percakapan via URL unik
 - Image gallery: galeri gambar yang dihasilkan AI
-- Custom instructions: preferensi user untuk AI (sistem prompt kustom)
 - Multi-language TTS: tambah suara bahasa lain
+- Conversation search: cari pesan lama dalam percakapan
+- Message reactions: beri reaction 👍/👎 pada jawaban AI
+- Usage dashboard: statistik penggunaan token & API calls
 
 ## Untuk AI Assistant Baru
 Jika chat sebelumnya hilang: baca README.md, ROADMAP.md,
