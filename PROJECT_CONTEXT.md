@@ -4,7 +4,7 @@
 > AI assistant cukup dibekali file ini untuk melanjutkan project.
 
 Last updated: 29 Agustus 2026
-Current phase: v2.0 SELESAI ✅
+Current phase: v2.1 SELESAI ✅
 
 ## Ringkasan Project
 Webpage chat AI multimodal (text, image, voice), LLM opensource via Groq API,
@@ -41,9 +41,10 @@ autentikasi email+password (Supabase).
 ✅ FASE 3 — Multimodal (SELESAI)
 ✅ FASE 4 — Polesan (SELESAI)
 ✅ FASE 5 — v1.1 Update (SELESAI)
-✅ FASE 6 — v2.0 Update (SELESAI) ← v2.0 RILIS!
+✅ FASE 6 — v2.0 Update (SELESAI)
+✅ FASE 7 — v2.1 Update (SELESAI) ← v2.1 RILIS!
 
-### Fitur Lengkap v2.0:
+### Fitur Lengkap v2.1:
 | Fitur | Teknologi | Biaya |
 |---|---|---|
 | 💬 Chat text streaming | Qwen 3.8 27B via Groq | Gratis |
@@ -60,6 +61,9 @@ autentikasi email+password (Supabase).
 | ⌨️ Keyboard Shortcuts | Ctrl+Enter, Ctrl+N, Ctrl+E, Ctrl+D, Escape | - |
 | ⚙️ Custom Instructions | Atur bagaimana AI merespons (per user) | Gratis |
 | 🔗 Share Link | Bagikan percakapan via URL unik | Gratis |
+| 🧠 RAG Hybrid | AI ingat dokumen & percakapan sebelumnya | Gratis |
+| 📚 Document Upload | Upload TXT/MD sebagai knowledge base | Gratis |
+| 🔍 Vector Search | Cosine similarity search (pgvector) | Gratis |
 | 🌐 Toggle bahasa ID/EN | lib/i18n.ts (persist localStorage) | - |
 | 🌓 Dark/Light mode | CSS variables + ThemeProvider (persist) | - |
 | 📱 Responsive mobile | Tailwind CSS + hamburger menu | - |
