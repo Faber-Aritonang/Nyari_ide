@@ -1,0 +1,228 @@
+========================================
+IDE BISNIS: Nyari_ide
+Platform Chat AI untuk Pengembangan Ide
+========================================
+
+NAMA IDE:
+Nyari_ide — Chat AI Multimodal untuk Mencari, Mengembangkan, dan Mengelola Ide
+
+DESKRIPSI SINGKAT:
+Nyari_ide adalah aplikasi web chat AI yang membantu pengguna mencari ide, mengembangkan ide menjadi konsep matang, menyusun mindmap, membuat dokumentasi struktur, dan menyusun langkah implementasi (action plan) — semuanya dalam satu platform.
+
+MASALAH YANG DISELESAIKAN:
+1. Sulit menemukan ide segar yang orisinal
+2. Ide sering hilang karena tidak didokumentasikan
+3. Tidak ada tools terpadu untuk pengembangan ide (dari brainstorming sampai action plan)
+4. Proses dokumentasi ide membosankan dan memakan waktu
+5. Mindmapping manual membingungkan dan tidak terstruktur
+6. Sulit mengubah ide abstrak menjadi langkah konkret
+7. Tidak ada AI yang spesifik membantu proses ideation
+
+TARGET USER:
+1. Entrepreneur & Startup Founder
+   - Yang sedang mencari ide bisnis baru
+   - Yang perlu mengembangkan ide menjadi proposal
+   - Yang butuh mindmap untuk presentasi
+
+2. Product Manager & UX Designer
+   - Yang perlu brainstorming fitur produk
+   - Yang butuh dokumentasi produk lengkap
+   - Yang ingin menyusun roadmap produk
+
+3. Mahasiswa & Pelajar
+   - Yang mengerjakan tugas proyek
+   - Yang butuh ide untuk skripsi/tesis
+   - Yang ingin belajar berpikir kreatif & sistematis
+
+4. Content Creator & Writer
+   - Yang butuh ide konten segar
+   - Yang ingin mengembangkan ide konten menjadi seri
+   - Yang perlu struktur konten yang terorganisir
+
+5. Tim Korporat & Organisasi
+   - Yang perlu brainstorming strategi bisnis
+   - Yang butuh dokumentasi proyek
+   - Yang ingin menyusun action plan tim
+
+SOLUSI:
+1. Chat AI Multimodal
+   - Bertanya langsung ke AI untuk mencari ide
+   - AI membantu mengembangkan ide step-by-step
+   - Support text, gambar, dan voice input
+
+2. Mindmap Generator
+   - AI membuat mindmap otomatis dari ide
+   - Visualisasi struktur ide yang jelas
+   - Bisa di-export untuk presentasi
+
+3. Dokumentasi Otomatis
+   - AI menyusun dokumentasi struktur dari ide
+   - Format terstandar (ringkasan, target, fitur, dll)
+   - Bisa di-export ke Markdown/PDF
+
+4. Action Plan Builder
+   - AI menyusun langkah implementasi konkret
+   - Timeline realistis dengan milestone
+   - Checklist yang bisa ditrack
+
+5. Knowledge Base (RAG)
+   - Upload dokumen referensi
+   - AI mengingat semua ide yang pernah dibahas
+   - Search dan retrieve konteks secara otomatis
+
+6. Collaboration Features
+   - Share ide via link unik
+   - Custom instructions per user
+   - Riwayat chat tersimpan aman
+
+NILAI JUAL (UNIQUE VALUE):
+1. All-in-one Platform Ideation
+   - Dari brainstorming sampai action plan dalam satu tools
+   - Tidak perlu pakai banyak aplikasi berbeda
+
+2. AI-Powered tapi Personal
+   - Custom instructions membuat AI sesuai kebutuhan user
+   - RAG mengingat semua ide user (conversation memory)
+
+3. Multimodal Interaction
+   - Chat text, voice input, upload gambar/file
+   - Fleksibel sesuai preferensi user
+
+4. Open Source & Gratis
+   - Dibangun dengan teknologi open source
+   - Deploy gratis di Vercel
+   - API key milik pribadi (data aman)
+
+5. Privacy-First
+   - Data tersimpan di database pribadi
+   - Tidak dijual ke pihak ketiga
+   - Whitelist akses (terbatas & terkendali)
+
+MONETISASI:
+1. Freemium Model (Long-term)
+   - Free: 50 pesan/hari, 3 dokumen RAG
+   - Pro ($9/bulan): Unlimited pesan, 50 dokumen, priority support
+   - Team ($29/bulan): Collaboration, shared workspace, admin panel
+
+2. Sponsorship & Partnership
+   - Kerjasama dengan edtech startup
+   - Sponsored content dari brand kreatif
+   - Affiliate program untuk tools produktivitas
+
+3. Premium Templates
+   - Template brainstorming premium
+   - Template dokumentasi industri spesifik
+   - Template action plan lengkap
+
+4. Consulting & Training
+   - Workshop "Ideation with AI"
+   - Consulting untuk startup tentang ideation process
+   - Corporate training untuk tim inovasi
+
+KOMPETITOR:
+1. ChatGPT / Claude / Gemini
+   - Kelebihan: Powerful, multi-purpose
+   - Kekurangan: Tidak spesifik untuk ideation, tidak ada mindmap generator, tidak ada RAG built-in
+
+2. Miro / Whimsical (Mindmap Tools)
+   - Kelebihan: Visual mindmap bagus
+   - Kekurangan: Manual, tidak ada AI assistance, tidak ada action plan
+
+3. Notion / Obsidian (Knowledge Management)
+   - Kelebihan: Organisasi dokumen lengkap
+   - Kekurangan: Manual, tidak ada AI ideation, learning curve tinggi
+
+4. Trello / Asana (Project Management)
+   - Kelebihan: Task management bagus
+   - Kekurangan: Tidak ada ideation, tidak ada AI brainstorming
+
+5. MindMeister / Coggle (Mindmap Online)
+   - Kelebihan: Mindmap visual bagus
+   - Kekurangan: Manual, tidak ada AI, tidak ada dokumentasi
+
+TARGET MARKET:
+1. Geographic: Indonesia (primary), Southeast Asia (secondary)
+2. Market Size:
+   - Indonesia: ~270 juta populasi
+   - Internet users: ~200 juta
+   - Target segment: Entrepreneurs, students, professionals (~10 juta)
+3. TAM (Total Addressable Market): ~5 juta users aktif
+4. SAM (Serviceable Addressable Market): ~500 ribu users
+5. SOM (Serviceable Obtainable Market): ~50 ribu users (tahun 1)
+
+TIM/YANG DIBUTUHKAN:
+1. Founder/Product Owner
+   - Vision & product direction
+   - User research & feedback
+   - Business development
+
+2. Full-Stack Developer (1-2 orang)
+   - Frontend: React/Next.js
+   - Backend: Node.js, Supabase
+   - AI Integration: Groq, OpenAI
+
+3. UI/UX Designer (1 orang, bisa freelance)
+   - Design system
+   - User flow
+   - Wireframe & mockup
+
+4. Content Creator (1 orang, part-time)
+   - Social media content
+   - Documentation
+   - Tutorial & guide
+
+ANGGARAN AWAL:
+1. Development (Month 1-3): Rp 0 (self-development)
+2. Hosting & Infrastructure: Rp 0 (free tier: Vercel, Supabase)
+3. AI API: Rp 500.000/bulan (Groq free tier + backup OpenAI)
+4. Domain: Rp 150.000/tahun
+5. Marketing (Month 4-6): Rp 2.000.000
+6. Total Minimum: Rp 2.650.000 (untuk 6 bulan pertama)
+
+TIMELINE:
+Phase 1 (Month 1): Core Chat & Auth
+- [x] Setup project
+- [x] Authentication (login, register)
+- [x] Basic chat with streaming
+- [x] Conversation history
+
+Phase 2 (Month 1-2): Multimodal Features
+- [x] Upload gambar (vision)
+- [x] Upload file & PDF
+- [x] Text-to-image
+- [x] Voice input & TTS
+
+Phase 3 (Month 2): Polish & Launch v1.0
+- [x] Model selector
+- [x] Dark/light mode
+- [x] Responsive design
+- [x] Admin whitelist
+
+Phase 4 (Month 3): v2.0 Features
+- [x] Custom instructions
+- [x] Share link
+- [x] Keyboard shortcuts
+- [x] Export chat
+
+Phase 5 (Month 3-4): RAG & Knowledge Base
+- [x] Document upload
+- [x] Vector search (pgvector)
+- [x] Conversation memory
+- [ ] Advanced RAG features
+
+Phase 6 (Month 5-6): Growth & Monetization
+- [ ] Landing page marketing
+- [ ] SEO optimization
+- [ ] Social media presence
+- [ ] User feedback loop
+- [ ] Premium features
+
+STATUS:
+Berjalan (Phase 5 selesai, memasuki Phase 6)
+
+CATATAN TAMBAHAN:
+- Proyek ini dibangun sebagai learning project sekaligus produk nyata
+- Semua dokumentasi ada di GitHub untuk transparansi
+- Open to contribution dan feedback dari komunitas
+- Roadmap lengkap ada di ROADMAP.md
+- Setiap keputusan desain didokumentasikan di docs/design-decisions.md
