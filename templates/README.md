@@ -13,6 +13,11 @@ Template ini membantu Anda menyusun ide secara terstruktur sebelum di-upload ke 
 | 3 | `03-dokumentasi-struktur.md` | Membuat dokumentasi proyek lengkap |
 | 4 | `04-action-plan.md` | Menyusun langkah implementasi/action plan |
 | 5 | `05-brainstorming.md` | Sesi brainstorming ide |
+| 6 | `06-teknologi-ai.md` | Tren & tools AI terkini |
+| 7 | `07-marketing-digital.md` | Strategi marketing digital |
+| 8 | `08-finansial-pribadi.md` | Pengelolaan keuangan pribadi |
+| 9 | `09-produktivitas.md` | Tips produktivitas & time management |
+| 10 | `10-pengembangan-diri.md` | Karir & pengembangan diri |
 
 ---
 
