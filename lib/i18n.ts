@@ -67,6 +67,16 @@ const strings = {
     fileTooLarge: "File terlalu besar.",
     downloadImage: "⬇ Download gambar",
 
+    // Settings
+    settings: "Pengaturan",
+    customInstructions: "Instruksi Kustom",
+    customInstructionsDesc: "Tentukan bagaimana AI harus merespons Anda. Instruksi ini akan ditambahkan ke setiap percakapan.",
+    customInstructionsPlaceholder: "Contoh: Jawab selalu dalam bahasa Inggris. Gunakan gaya formal. Fokus pada topik teknologi.",
+    save: "Simpan",
+    saving: "Menyimpan...",
+    saved: "Tersimpan!",
+    maxChars: "Maks 2000 karakter",
+
     // Actions v1.1
     copyMessage: "Salin pesan",
     copied: "Tersalin!",
@@ -145,6 +155,16 @@ const strings = {
     fileFormatError: "Unsupported file format. Use text or PDF file.",
     fileTooLarge: "File too large.",
     downloadImage: "⬇ Download image",
+
+    // Settings
+    settings: "Settings",
+    customInstructions: "Custom Instructions",
+    customInstructionsDesc: "Define how the AI should respond to you. These instructions will be added to every conversation.",
+    customInstructionsPlaceholder: "Example: Always respond in English. Use formal style. Focus on technology topics.",
+    save: "Save",
+    saving: "Saving...",
+    saved: "Saved!",
+    maxChars: "Max 2000 characters",
 
     // Actions v1.1
     copyMessage: "Copy message",

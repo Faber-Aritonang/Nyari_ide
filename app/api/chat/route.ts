@@ -71,7 +71,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Bangun messages array untuk Groq
+    // 6. Ambil custom instructions user (jika ada)
+    let customInstructions = "";
+    const { data: userSettings } = await supabase
+      .from("custom_instructions")
+      .select("instructions")
+      .eq("user_id", user.id)
+      .single();
+
+    if (userSettings?.instructions) {
+      customInstructions = userSettings.instructions;
+    }
+
+    // Gabungkan system prompt dengan custom instructions
+    const finalSystemPrompt = customInstructions
+      ? `${SYSTEM_PROMPT}\n\n[Instruksi kustom dari user]:\n${customInstructions}`
+      : SYSTEM_PROMPT;
+
+    // 7. Bangun messages array untuk Groq
     // Penting: HANYA konten terkini yang dikirim. Gambar/file lama di-strip
     // untuk menghindari rate limit TPM.
     const MAX_HISTORY_MESSAGES = 20;
@@ -97,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     const groqMessages = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: finalSystemPrompt },
       // Riwayat: HANYA teks (gambar & file lama di-strip)
       ...recentHistory.map((m) => ({
         role: m.role,
