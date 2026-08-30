@@ -57,9 +57,8 @@ async function generateWithCloudflare(
 
   try {
     const model = "@cf/black-forest-labs/flux-1-schnell";
-    const encodedModel = encodeURIComponent(model);
     const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${encodedModel}`,
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
       {
         method: "POST",
         headers: {
@@ -68,15 +67,16 @@ async function generateWithCloudflare(
         },
         body: JSON.stringify({
           prompt,
-          steps: 4,
-          seed: Math.floor(Math.random() * 100000),
         }),
       }
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error("[Cloudflare] Error response:", JSON.stringify(errorData));
+      const detail = errorData.errors?.[0]?.message || errorData.error || "";
       let errorMsg = `Cloudflare API error: ${response.status}`;
+      if (detail) errorMsg += ` — ${detail}`;
       if (response.status === 429) {
         errorMsg = "Kuota Cloudflare gratis sudah habis. Coba lagi besok.";
       }
