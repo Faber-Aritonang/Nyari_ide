@@ -13,6 +13,7 @@ import { useTheme } from "@/lib/theme-context";
 import { parseSSEStream } from "@/lib/sse-utils";
 import ImageGallery from "@/app/components/ImageGallery";
 import UsageDashboard from "@/app/components/UsageDashboard";
+import PromptLibrary from "@/app/components/PromptLibrary";
 
 interface Conversation {
   id: string;
@@ -52,6 +53,7 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
+  const [promptsOpen, setPromptsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{
     message_id: string;
@@ -369,6 +371,88 @@ export default function ChatPage() {
     setSending(false);
   }
 
+  // Regenerate image with same prompt
+  async function handleRegenerateImage(prompt: string) {
+    if (sending || !activeConvId) return;
+
+    setInput("");
+    setSending(true);
+    setImageGenMode(false);
+
+    setMessages((prev) => [...prev, { role: "user", content: `[🔄 Regenerate] ${prompt}` }]);
+    setMessages((prev) => [...prev, { role: "assistant", content: `🎨 Regenerating with ${imageProvider}...` }]);
+
+    // Save user message to database
+    try {
+      await fetch(`/api/conversations/${activeConvId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: "user",
+          content: `[🔄 Regenerate] ${prompt}`,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to save user message:", err);
+    }
+
+    try {
+      const res = await fetch("/api/image-gen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          provider: imageProvider,
+          size: "1024",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success || !data.url) {
+        throw new Error(data.error || "Image generation failed");
+      }
+
+      const assistantContent = `🎨 Regenerated with ${data.provider}\nPrompt: "${prompt}"`;
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastIdx = updated.length - 1;
+        updated[lastIdx] = {
+          role: "assistant",
+          content: assistantContent,
+          generated_image_url: data.url,
+        };
+        return updated;
+      });
+
+      // Save assistant message with image to database
+      try {
+        await fetch(`/api/conversations/${activeConvId}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            role: "assistant",
+            content: assistantContent,
+            generated_image_url: data.url,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to save assistant message:", err);
+      }
+    } catch (err) {
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastIdx = updated.length - 1;
+        updated[lastIdx] = {
+          role: "assistant",
+          content: `❌ ${err instanceof Error ? err.message : t("networkError")}`,
+        };
+        return updated;
+      });
+    }
+    setSending(false);
+  }
+
   // Handle reaction (like/dislike)
   async function handleReaction(messageId: string, reaction: "like" | "dislike" | null) {
     try {
@@ -379,6 +463,28 @@ export default function ChatPage() {
       });
     } catch (err) {
       console.error("Failed to update reaction:", err);
+    }
+  }
+
+  // Branch conversation from a specific message
+  async function handleBranch(messageId: string) {
+    if (!activeConvId) return;
+
+    try {
+      const res = await fetch(`/api/conversations/${activeConvId}/branch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageId }),
+      });
+
+      if (res.ok) {
+        const newConv = await res.json();
+        setConversations((prev) => [newConv, ...prev]);
+        setActiveConvId(newConv.id);
+        setMessages([]);
+      }
+    } catch (err) {
+      console.error("Failed to branch conversation:", err);
     }
   }
 
@@ -804,6 +910,12 @@ export default function ChatPage() {
           >
             📊
           </button>
+          <button
+            onClick={() => setPromptsOpen(true)}
+            className="flex-1 rounded-lg bg-input-bg hover:bg-surface-hover border border-border-theme py-2 text-sm transition-colors flex items-center justify-center gap-1"
+          >
+            📚
+          </button>
         </div>
 
         {/* New conversation button */}
@@ -949,6 +1061,8 @@ export default function ChatPage() {
                     onRetry={!sending && msg.role === "assistant" && i === messages.length - 1 ? handleRegenerate : undefined}
                     onEdit={msg.role === "user" && !sending ? (newContent) => handleEditMessage(i, newContent) : undefined}
                     onReaction={msg.role === "assistant" ? handleReaction : undefined}
+                    onBranch={msg.id && !sending ? handleBranch : undefined}
+                    onRegenerateImage={msg.generated_image_url && !sending ? handleRegenerateImage : undefined}
                   />
                 ))}
                 <div ref={messagesEndRef} />
@@ -1078,6 +1192,14 @@ export default function ChatPage() {
 
       {/* Usage Dashboard Modal */}
       <UsageDashboard isOpen={usageOpen} onClose={() => setUsageOpen(false)} lang={lang} />
+
+      {/* Prompt Library Modal */}
+      <PromptLibrary
+        isOpen={promptsOpen}
+        onClose={() => setPromptsOpen(false)}
+        onSelect={(prompt) => setInput(prompt)}
+        lang={lang}
+      />
     </div>
   );
 }

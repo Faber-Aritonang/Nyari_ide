@@ -1,6 +1,6 @@
 # Nyari_ide 🧠💡
 
-![Version](https://img.shields.io/badge/version-v2.3-blue)
+![Version](https://img.shields.io/badge/version-v2.4-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![Supabase](https://img.shields.io/badge/Supabase-Database-3FCF8E)
@@ -25,13 +25,18 @@ Pengguna yang sudah login dapat:
 | Fitur | Penjelasan |
 |---|---|
 | 💬 Chat text | Bertanya/jawab dengan LLM opensource (Qwen 3.8 27B via Groq API), respons streaming |
+| 🧠 AI Persona | Teman diskusi, coaching personal, & mentor pribadi |
 | 🖼️ Upload gambar | Kirim gambar → AI menganalisis (compressed otomatis 512x512) |
 | 📄 Upload file | Kirim file teks/PDF → AI membaca & menjawab (pdf.js client-side) |
 | 🎨 Text-to-image | Menulis prompt → AI membuat gambar (Cloudflare FLUX + Pollinations.ai, gratis) |
+| 🔄 Image Regeneration | Regenerate gambar dengan prompt sama |
 | 🖼️ Image Gallery | Galeri semua gambar yang pernah di-generate AI |
+| 📚 Prompt Library | Simpan & reuse prompt favorit |
+| 🌿 Conversation Branching | Cabang percakapan dari pesan tertentu |
 | 📊 Usage Dashboard | Statistik penggunaan: pesan, gambar, dokumen, aktivitas 7 hari |
 | 🔊 Text-to-speech | Suara AI membacakan jawaban (Groq Orpheus — English + Arabic Saudi) |
 | 🎤 Voice input | Bicara ke mikrofon → diubah jadi teks (Whisper Large v3 Turbo) |
+| 💻 Code Highlighting | Syntax highlighting + tombol copy per code block |
 | 🔄 Model selector | Pilih model AI: Qwen 3.8/3.6, GPT-OSS 120B/20B |
 | 🌐 Bilingual | Antarmuka dalam Bahasa Indonesia & English |
 | 🌓 Dark/Light mode | Toggle tema gelap/terang, tersimpan otomatis |
@@ -75,12 +80,13 @@ Semua API key tersimpan **hanya di sisi server** — tidak pernah terekspos di b
 
 ## 📊 Status Proyek
 
-> **v2.3 RILIS!** ✅ Performance Optimization — SSE dedup, N+1 fix, parallel fetch, Image Gallery, Usage Dashboard.
+> **v2.4 RILIS!** ✅ AI Personal Coach — Code Highlighting, Conversation Branching, Prompt Library, Image Regeneration, AI Persona.
 
 Aplikasi ini sudah bisa dicoba langsung di: **[nyari-ide.vercel.app](https://nyari-ide.vercel.app)**
 
 | Version | Release |
 |---------|---------|
+| v2.4 | [AI Personal Coach + Code Highlighting + Branching](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.4) |
 | v2.3 | [Performance Optimization + Gallery + Dashboard](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.3) |
 | v2.2 | [Image Generation Overhaul](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.2) |
 | v2.1 | [RAG Hybrid](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.1) |
@@ -132,6 +138,7 @@ Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 | TTS | Groq Orpheus — English (hannah) + Arabic Saudi (noura) |
 | Voice input | Whisper Large v3 Turbo via Groq |
 | Text-to-image | Cloudflare Workers AI (FLUX.1) + Pollinations.ai (fallback) |
+| Syntax Highlighting | rehype-highlight + highlight.js |
 | PDF extraction | pdfjs-dist (client-side) |
 | Auth + Database | Supabase (email+password, PostgreSQL, RLS) |
 | Logging | lib/logger.ts (production-safe, silent di production) |

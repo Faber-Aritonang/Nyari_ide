@@ -2,8 +2,10 @@
 
 import { useState, useRef, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
 import { downloadImage } from "@/lib/image-gen";
 import { t } from "@/lib/i18n";
+import "highlight.js/styles/github-dark.css";
 
 export interface Message {
   id?: string;
@@ -58,9 +60,11 @@ interface ChatMessageProps {
   onRetry?: () => void;
   onEdit?: (newContent: string) => void;
   onReaction?: (messageId: string, reaction: "like" | "dislike" | null) => void;
+  onBranch?: (messageId: string) => void;
+  onRegenerateImage?: (prompt: string) => void;
 }
 
-export default function ChatMessage({ message, messageId, onRetry, onEdit, onReaction }: ChatMessageProps) {
+export default function ChatMessage({ message, messageId, onRetry, onEdit, onReaction, onBranch, onRegenerateImage }: ChatMessageProps) {
   const isUser = message.role === "user";
   const [speaking, setSpeaking] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
@@ -162,9 +166,22 @@ export default function ChatMessage({ message, messageId, onRetry, onEdit, onRea
         {message.generated_image_url && (
           <div className="mb-2">
             <img src={message.generated_image_url} alt="Generated image" className="rounded-lg max-w-full max-h-96 object-contain" />
-            <button onClick={() => downloadImage(message.generated_image_url!, `nyari-ide-${Date.now()}.jpg`)} className="mt-2 text-xs text-muted hover:text-foreground transition-colors">
-              {t("downloadImage")}
-            </button>
+            <div className="flex items-center gap-3 mt-2">
+              <button onClick={() => downloadImage(message.generated_image_url!, `nyari-ide-${Date.now()}.jpg`)} className="text-xs text-muted hover:text-foreground transition-colors">
+                {t("downloadImage")}
+              </button>
+              {onRegenerateImage && (
+                <button
+                  onClick={() => {
+                    const promptMatch = message.content.match(/Prompt: "(.+)"/);
+                    if (promptMatch) onRegenerateImage(promptMatch[1]);
+                  }}
+                  className="text-xs text-muted hover:text-foreground transition-colors"
+                >
+                  🔄 {t("regenerate")}
+                </button>
+              )}
+            </div>
           </div>
         )}
         {isUser ? (
@@ -204,12 +221,40 @@ export default function ChatMessage({ message, messageId, onRetry, onEdit, onRea
         ) : (
           <div className="prose prose-invert prose-sm max-w-none">
             <ReactMarkdown
+              rehypePlugins={[rehypeHighlight]}
               components={{
                 p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                code: ({ children, className }) => {
-                  return !className ? <code className="bg-accent-bg px-1.5 py-0.5 rounded text-sm">{children}</code> : <code className={className}>{children}</code>;
+                code: ({ children, className, ...rest }) => {
+                  const isInline = !className;
+                  if (isInline) {
+                    return <code className="bg-accent-bg px-1.5 py-0.5 rounded text-sm" {...rest}>{children}</code>;
+                  }
+                  return <code className={className} {...rest}>{children}</code>;
                 },
-                pre: ({ children }) => <pre className="bg-code-bg rounded-lg p-3 overflow-x-auto mb-2 last:mb-0">{children}</pre>,
+                pre: ({ children, ...rest }) => {
+                  const codeEl = (children as React.ReactElement<{ children?: React.ReactNode; className?: string }>);
+                  const codeText = String(codeEl?.props?.children || "");
+                  const lang = codeEl?.props?.className?.replace("language-", "") || "";
+                  return (
+                    <div className="relative group mb-2 last:mb-0">
+                      {lang && (
+                        <div className="absolute top-0 right-0 px-2 py-1 text-xs text-muted bg-code-bg rounded-bl-lg z-10">
+                          {lang}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(codeText);
+                        }}
+                        className="absolute top-0 right-0 px-2 py-1 text-xs text-muted hover:text-foreground bg-code-bg hover:bg-surface-hover rounded-bl-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        title="Copy code"
+                      >
+                        📋
+                      </button>
+                      <pre className="bg-code-bg rounded-lg p-3 overflow-x-auto" {...rest}>{children}</pre>
+                    </div>
+                  );
+                },
               }}
             >
               {message.content}
@@ -258,6 +303,17 @@ export default function ChatMessage({ message, messageId, onRetry, onEdit, onRea
             >
               {copied ? `✓ ${t("copied")}` : "📋"}
             </button>
+
+            {/* Branch button */}
+            {onBranch && messageId && (
+              <button
+                onClick={() => onBranch(messageId)}
+                className="text-xs text-muted hover:text-muted-light transition-colors"
+                title="Branch from here"
+              >
+                🌿
+              </button>
+            )}
 
             {/* Regenerate button */}
             {onRetry && (

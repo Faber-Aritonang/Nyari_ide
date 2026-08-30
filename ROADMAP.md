@@ -166,9 +166,18 @@
 - [x] Production-safe logger (lib/logger.ts)
 - [x] Console cleanup — semua 38 console.error/log diganti ke logger
 
+## v2.4 — AI Personal Coach ✅
+- [x] Code Syntax Highlighting + Copy button per block (rehype-highlight)
+- [x] Conversation Branching — cabang percakapan dari pesan tertentu
+- [x] Prompt Library — simpan & reuse prompt favorit
+- [x] Image Regeneration — regenerate gambar dengan prompt sama
+- [x] AI Persona — teman diskusi, coaching personal, mentor pribadi
+- [x] API route /api/prompts — CRUD prompt library
+- [x] Database table saved_prompts dengan RLS
+
 ## Masa Depan (backlog)
 - [ ] Multi-language TTS (bahasa lain selain EN + AR)
-- [ ] Prompt templates untuk image generation
-- [ ] Image history & favorites
 - [ ] Error boundaries di UI
 - [ ] Rate limiting per user
+- [ ] Real-time collaboration
+- [ ] Offline mode
