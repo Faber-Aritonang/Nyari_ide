@@ -294,6 +294,20 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, { role: "user", content: `[🎨 ${imageProvider.toUpperCase()}] ${prompt}` }]);
     setMessages((prev) => [...prev, { role: "assistant", content: `🎨 Generating with ${imageProvider}...` }]);
 
+    // Save user message to database
+    try {
+      await fetch(`/api/conversations/${activeConvId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: "user",
+          content: `[🎨 ${imageProvider.toUpperCase()}] ${prompt}`,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to save user message:", err);
+    }
+
     try {
       // Call server-side API route (API keys are server-only env vars)
       const res = await fetch("/api/image-gen", {
@@ -313,16 +327,32 @@ export default function ChatPage() {
       }
 
       // Set image directly — server already verified generation succeeded
+      const assistantContent = `🎨 Generated with ${data.provider}\nPrompt: "${prompt}"`;
       setMessages((prev) => {
         const updated = [...prev];
         const lastIdx = updated.length - 1;
         updated[lastIdx] = {
           role: "assistant",
-          content: `🎨 Generated with ${data.provider}\nPrompt: "${prompt}"`,
+          content: assistantContent,
           generated_image_url: data.url,
         };
         return updated;
       });
+
+      // Save assistant message with image to database
+      try {
+        await fetch(`/api/conversations/${activeConvId}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            role: "assistant",
+            content: assistantContent,
+            generated_image_url: data.url,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to save assistant message:", err);
+      }
     } catch (err) {
       setMessages((prev) => {
         const updated = [...prev];
