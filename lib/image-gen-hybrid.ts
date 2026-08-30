@@ -57,8 +57,9 @@ async function generateWithCloudflare(
 
   try {
     const model = "@cf/black-forest-labs/flux-1-schnell";
+    const encodedModel = encodeURIComponent(model);
     const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${encodedModel}`,
       {
         method: "POST",
         headers: {
