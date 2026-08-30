@@ -22,43 +22,99 @@ sehingga bisa dilanjutkan kapan saja dari perangkat mana pun.
 
 Pengguna yang sudah login dapat:
 
+### 💬 Chat & Komunikasi
 | Fitur | Penjelasan |
 |---|---|
-| 💬 Chat text | Bertanya/jawab dengan LLM opensource (Qwen 3.8 27B via Groq API), respons streaming |
-| 🧠 AI Persona | Teman diskusi, coaching personal, & mentor pribadi |
+| 💬 Chat text streaming | Bertanya/jawab dengan LLM opensource (Qwen 3.8 27B via Groq API), respons streaming |
+| 🎭 AI Persona | Ganti persona AI: Teman Diskusi, Coding Expert, Creative Writer, Business Mentor, Ahli Bahasa Indonesia, Minimalis |
+| 🔄 Model selector | Pilih model AI: Qwen 3.8/3.6, GPT-OSS 120B/20B |
+| 🌐 Bilingual | Antarmuka dalam Bahasa Indonesia & English |
+| ⌨️ Keyboard Shortcuts | Ctrl+Enter kirim, Ctrl+N baru, Ctrl+E export, Ctrl+D hapus |
+
+### 🖼️ Multimodal
+| Fitur | Penjelasan |
+|---|---|
 | 🖼️ Upload gambar | Kirim gambar → AI menganalisis (compressed otomatis 512x512) |
 | 📄 Upload file | Kirim file teks/PDF → AI membaca & menjawab (pdf.js client-side) |
 | 🎨 Text-to-image | Menulis prompt → AI membuat gambar (Cloudflare FLUX + Pollinations.ai, gratis) |
 | 🔄 Image Regeneration | Regenerate gambar dengan prompt sama |
 | 🖼️ Image Gallery | Galeri semua gambar yang pernah di-generate AI |
-| 📚 Prompt Library | Simpan & reuse prompt favorit |
-| 🌿 Conversation Branching | Cabang percakapan dari pesan tertentu |
-| 📋 Chat Templates | Template percakapan siap pakai (Coding, Writing, Brainstorm, dll) |
-| 📝 Conversation Summary | AI buat ringkasan otomatis dari percakapan panjang |
-| 📄 Export PDF | Export percakapan ke PDF |
-| 📦 Export/Import JSON | Export/Import riwayat chat ke file JSON |
-| ▶️ Code Execution | Eksekusi kode JavaScript langsung di browser (sandbox) |
-| 🔔 Notifications | Notifikasi browser saat AI selesai merespons |
-| 🎭 AI Persona | Ganti persona AI (Coding, Creative, Business, Mentor, dll) |
-| 📡 Offline Mode | Akses percakapan yang di-cache tanpa internet |
-| 📊 Usage Dashboard | Statistik penggunaan: pesan, gambar, dokumen, aktivitas 7 hari |
 | 🔊 Text-to-speech | Suara AI membacakan jawaban (Groq Orpheus — English + Arabic Saudi) |
 | 🎤 Voice input | Bicara ke mikrofon → diubah jadi teks (Whisper Large v3 Turbo) |
+
+### 🧠 Produktivitas
+| Fitur | Penjelasan |
+|---|---|
+| 📚 Prompt Library | Simpan & reuse prompt favorit |
+| 📋 Chat Templates | 15+ template dengan 7 teknik prompting (Persona, Chain-of-Thought, Few-Shot, dll) |
+| 🌿 Conversation Branching | Cabang percakapan dari pesan tertentu |
+| 📝 Conversation Summary | AI buat ringkasan otomatis dari percakapan panjang |
+| 🔍 Search | Cari pesan lintas percakapan |
+
+### 💻 Developer Tools
+| Fitur | Penjelasan |
+|---|---|
 | 💻 Code Highlighting | Syntax highlighting + tombol copy per code block |
-| 🔄 Model selector | Pilih model AI: Qwen 3.8/3.6, GPT-OSS 120B/20B |
-| 🌐 Bilingual | Antarmuka dalam Bahasa Indonesia & English |
-| 🌓 Dark/Light mode | Toggle tema gelap/terang, tersimpan otomatis |
-| 🗂️ Riwayat chat | Percakapan tersimpan per user di database, bisa dibuka dari device mana pun |
-| 🔄 Regenerate | Regenerasi ide dengan prompt yang sama |
-| 📋 Copy & Edit | Copy ide ke clipboard / edit langsung di chat |
-| 📄 Export | Export percakapan ke Markdown / PDF |
-| ⌨️ Keyboard Shortcuts | Ctrl+Enter kirim, Ctrl+N baru, Ctrl+E export, Ctrl+D hapus |
-| ⚙️ Custom Instructions | Atur bagaimana AI harus merespons Anda (per user) |
+| ▶️ Code Execution | Eksekusi kode JavaScript langsung di browser (sandboxed iframe) |
+| 📄 Export PDF | Export percakapan ke PDF |
+| 📦 Export/Import JSON | Export/Import riwayat chat ke file JSON |
 | 🔗 Share Link | Bagikan percakapan via URL unik |
+
+### ⚙️ Pengaturan & Lainnya
+| Fitur | Penjelasan |
+|---|---|
+| ⚙️ Custom Instructions | Atur bagaimana AI harus merespons Anda (per user) |
+| 📊 Usage Dashboard | Statistik penggunaan: pesan, gambar, dokumen, aktivitas 7 hari |
+| 🔔 Notifications | Notifikasi browser saat AI selesai merespons |
+| 📡 Offline Mode | Akses percakapan yang di-cache tanpa internet |
 | 🧠 RAG Hybrid | AI ingat dokumen & percakapan sebelumnya |
 | 📚 Document Upload | Upload TXT/MD sebagai knowledge base |
-| 🔍 Search | Cari pesan lintas percakapan |
+| 🌓 Dark/Light mode | Toggle tema gelap/terang, tersimpan otomatis |
 | 📱 Mobile | Responsive di HP & desktop |
+| 🗂️ Riwayat chat | Percakapan tersimpan per user di database |
+
+---
+
+## 🎭 AI Persona
+
+Pilih persona AI yang sesuai dengan kebutuhan Anda:
+
+| Persona | Icon | Deskripsi |
+|---------|------|-----------|
+| **Teman Diskusi** | 🧠 | Default — coaching personal & mentor pribadi |
+| **Coding Expert** | 💻 | Ahli programming, debugging, & architecture |
+| **Creative Writer** | ✍️ | Penulis kreatif, content creator, & storytelling |
+| **Business Mentor** | 💼 | Mentor bisnis, startup advisor, & strategic thinker |
+| **Ahli Bahasa Indonesia** | 🇮🇩 | Ahli tata bahasa & komunikasi Indonesia |
+| **Minimalis** | ⚡ | Jawaban singkat, padat, langsung ke inti |
+
+---
+
+## 📋 Chat Templates
+
+15+ template dengan 7 teknik prompting yang berbeda:
+
+### Teknik Prompting
+| Teknik | Deskripsi |
+|--------|-----------|
+| 🎭 **Persona Prompt** | Definisikan peran & spesialisasi AI |
+| 🔗 **Chain-of-Thought** | Berpikir step-by-step |
+| 🎯 **Few-Shot** | Berikan contoh untuk diikuti |
+| 📐 **Structured** | Format terstruktur dengan section |
+| 🔄 **Iterative** | Bangun secara bertahap |
+| ⛔ **Constraint-Based** | Aturan dan batasan ketat |
+| 💬 **Short Prompt** | Tanya jawab singkat |
+
+### Contoh Template
+- 💻 **Coding Helper** — Senior Developer, Code Generation
+- ✍️ **Writing Assistant** — Email Writing, Blog Post Writer
+- 💡 **Brainstorming Partner** — Problem Solver, Decision Making
+- 📊 **Business Analysis** — Business Mentor, API Documentation
+- 🎯 **Idea Coach** — App Builder, Content Creator
+- 📚 **Learning Buddy** — Quick Q&A
+- 📝 **Document Review** — Interview Coach, 30-Second Pitch
+
+---
 
 ## 🚫 Kenapa Proyek Ini Dibuat?
 
@@ -66,6 +122,8 @@ Pengguna yang sudah login dapat:
 2. **Belajar membangun produk AI end-to-end**: frontend, auth, database, integrasi LLM, hingga deployment
 3. **Eksperimen dengan LLM opensource** — menunjukkan bahwa teknologi AI mutakhir bisa dimanfaatkan tanpa biaya besar
 4. **Fondasi untuk fitur lanjutan** seperti RAG (Retrieval-Augmented Generation) agar AI menjawab spesifik berdasarkan dokumen
+
+---
 
 ## 🛠️ Bagaimana Cara Kerjanya? (Arsitektur Singkat)
 
@@ -75,6 +133,7 @@ Pengguna (browser)
 ▼
 Next.js Web App ──► Supabase Auth (whitelist maks 10 akun)
 │                    Supabase DB (riwayat chat per user)
+│                    IndexedDB (offline cache)
 │
 ├──► Groq API : chat text + vision + whisper + Orpheus TTS (LLM opensource)
 ├──► Cloudflare Workers AI : text-to-image (FLUX.1 schnell)
@@ -86,26 +145,30 @@ Deploy: Vercel (free tier) → dapat URL publik, tapi hanya whitelist yang bisa 
 
 Semua API key tersimpan **hanya di sisi server** — tidak pernah terekspos di browser.
 
+---
+
 ## 📊 Status Proyek
 
-> **v2.5 RILIS!** ✅ Export PDF, Chat Templates, Conversation Summary.
+> **v2.7 RILIS!** ✅ AI Persona Switcher + Offline Mode.
 
 Aplikasi ini sudah bisa dicoba langsung di: **[nyari-ide.vercel.app](https://nyari-ide.vercel.app)**
 
-| Version | Release |
-|---------|---------|
-| v2.7 | [AI Persona Switcher + Offline Mode](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.7) |
-| v2.6 | [Code Execution + JSON Import/Export + Notifications](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.6) |
-| v2.5 | [Export PDF + Chat Templates + Conversation Summary](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.5) |
-| v2.4 | [AI Personal Coach + Code Highlighting + Branching](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.4) |
-| v2.3 | [Performance Optimization + Gallery + Dashboard](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.3) |
-| v2.2 | [Image Generation Overhaul](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.2) |
-| v2.1 | [RAG Hybrid](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.1) |
-| v2.0 | [Custom Instructions](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.0) |
-| v1.1 | [Regenerasi, Copy, Edit, Export, Keyboard Shortcuts](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v1.1) |
-| v1.0 | [Initial Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v1.0) |
+| Version | Release | Fitur Utama |
+|---------|---------|-------------|
+| v2.7 | [Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.7) | AI Persona Switcher + Offline Mode |
+| v2.6 | [Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.6) | Code Execution + JSON Import/Export + Notifications |
+| v2.5 | [Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.5) | Export PDF + Chat Templates + Conversation Summary |
+| v2.4 | [Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.4) | AI Personal Coach + Code Highlighting + Branching |
+| v2.3 | [Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.3) | Performance Optimization + Gallery + Dashboard |
+| v2.2 | [Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.2) | Image Generation Overhaul (Cloudflare + Pollinations) |
+| v2.1 | [Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.1) | RAG Hybrid (pgvector + embeddings) |
+| v2.0 | [Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.0) | Custom Instructions |
+| v1.1 | [Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v1.1) | Regenerasi, Copy, Edit, Export, Keyboard Shortcuts |
+| v1.0 | [Release](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v1.0) | Initial Release |
 
-### 🧪 Mau Coba?
+---
+
+## 🧪 Mau Coba?
 
 Aplikasi ini bersifat **private & terbatas** (whitelist maks 10 akun). Bagi yang ingin mencoba, silakan kirim permohonan akses test ke email admin:
 
@@ -122,6 +185,8 @@ Admin akan mendaftarkan email Anda ke whitelist, setelah itu Anda bisa langsung 
 
 ---
 
+## 🗺️ Roadmap
+
 Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 
 - ✅ FASE 0 — Fondasi & dokumentasi
@@ -129,8 +194,18 @@ Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 - ✅ FASE 2 — Chat text fungsional
 - ✅ FASE 3 — Multimodal (gambar, PDF, voice)
 - ✅ FASE 4 — Polesan & rilis v1.0
+- ✅ v2.0 — Custom Instructions
+- ✅ v2.1 — RAG Hybrid
+- ✅ v2.2 — Image Generation Overhaul
+- ✅ v2.3 — Performance Optimization
+- ✅ v2.4 — AI Personal Coach
+- ✅ v2.5 — Export PDF + Templates + Summary
+- ✅ v2.6 — Code Execution + JSON Import/Export + Notifications
+- ✅ v2.7 — AI Persona Switcher + Offline Mode
 
-## 📁 Struktur Dokumentasi (untuk yang ingin menelusuri)
+---
+
+## 📁 Struktur Dokumentasi
 
 | File | Isi |
 |---|---|
@@ -139,6 +214,8 @@ Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 | [`docs/design-decisions.md`](./docs/design-decisions.md) | Log semua keputusan desain beserta alasannya |
 | [`docs/setup.md`](./docs/setup.md) | Panduan setup environment & deploy |
 | [`docs/api-notes.md`](./docs/api-notes.md) | Catatan teknis integrasi Groq, Pollinations, Supabase |
+
+---
 
 ## 🧰 Tech Stack
 
@@ -150,16 +227,34 @@ Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 | Voice input | Whisper Large v3 Turbo via Groq |
 | Text-to-image | Cloudflare Workers AI (FLUX.1) + Pollinations.ai (fallback) |
 | Syntax Highlighting | rehype-highlight + highlight.js |
+| Code Execution | Sandboxed iframe (JavaScript) |
 | PDF extraction | pdfjs-dist (client-side) |
 | Auth + Database | Supabase (email+password, PostgreSQL, RLS) |
+| Offline Cache | IndexedDB (percakapan terakhir) |
+| Export | jsPDF + html2canvas (PDF), JSON, Markdown |
 | Logging | lib/logger.ts (production-safe, silent di production) |
 | Deploy | Vercel (free tier) |
+
+---
 
 ## ⚠️ Catatan
 
 Repo ini public untuk tujuan dokumentasi dan pembelajaran.
 **Tidak ada API key, password, atau data sensitif** yang disimpan di repo ini —
 semua rahasia melalui environment variables (lihat `.env.example`).
+
+---
+
+## 📈 Statistik Project
+
+| Metrik | Nilai |
+|--------|-------|
+| Total Version | 12 (v1.0 - v2.7) |
+| Total Fitur | 35+ |
+| File TypeScript | 86+ |
+| API Routes | 15+ |
+| Database Tables | 8 |
+| Components | 15+ |
 
 ---
 
