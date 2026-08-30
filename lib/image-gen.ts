@@ -1,8 +1,8 @@
 // lib/image-gen.ts — Text-to-image (Hybrid Multi-Provider)
-// Supports: Gemini Flash (free), Pollinations.ai (free), FLUX Pro (paid)
+// Supports: Cloudflare Workers AI (free), Pollinations.ai (free)
 
 export type ImageSize = "512" | "768" | "1024";
-export type ImageProvider = "gemini" | "pollinations" | "flux";
+export type ImageProvider = "cloudflare" | "pollinations";
 
 export const IMAGE_SIZES: { value: ImageSize; label: string }[] = [
   { value: "512", label: "512×512 (cepat)" },
@@ -11,9 +11,8 @@ export const IMAGE_SIZES: { value: ImageSize; label: string }[] = [
 ];
 
 export const IMAGE_PROVIDERS: { value: ImageProvider; label: string; free: boolean }[] = [
-  { value: "gemini", label: "🤖 Gemini Flash (Gratis 500/day)", free: true },
+  { value: "cloudflare", label: "☁️ Cloudflare FLUX (Gratis 10K/day)", free: true },
   { value: "pollinations", label: "🎨 Pollinations.ai (Gratis)", free: true },
-  { value: "flux", label: "✨ FLUX 1.1 Pro ($0.04/img)", free: false },
 ];
 
 // Re-export hybrid functions

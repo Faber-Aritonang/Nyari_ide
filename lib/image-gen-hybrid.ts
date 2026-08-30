@@ -1,8 +1,8 @@
 // lib/image-gen-hybrid.ts — Hybrid Text-to-Image (Multi-Provider)
-// Supports: Gemini Flash, Pollinations.ai, FLUX Pro
-// Strategy: Gemini (free 500/day) → Pollinations (fallback) → FLUX (premium)
+// Supports: Pollinations.ai (free, no key), Cloudflare Workers AI (free tier)
+// Strategy: Cloudflare (quality) → Pollinations (fallback)
 
-export type ImageProvider = "gemini" | "pollinations" | "flux";
+export type ImageProvider = "cloudflare" | "pollinations";
 export type ImageSize = "512" | "768" | "1024";
 
 export interface ImageGenerationOptions {
@@ -21,75 +21,67 @@ export interface ImageGenerationResult {
 
 // Provider configurations
 const PROVIDERS = {
-  gemini: {
-    name: "Gemini Flash Image",
+  cloudflare: {
+    name: "Cloudflare Workers AI (FLUX)",
     maxSize: "1024",
-    freeLimit: 500, // per day
+    freeLimit: 10000, // neurons per day
+    costPerImage: 0.000053, // USD per 512x512 tile
   },
   pollinations: {
-    name: "Pollinations.ai",
+    name: "Pollinations.ai (Gratis)",
     maxSize: "1024",
     freeLimit: -1, // unlimited (rate limited)
-  },
-  flux: {
-    name: "FLUX 1.1 Pro",
-    maxSize: "1024",
-    freeLimit: 0,
-    costPerImage: 0.04, // USD
   },
 } as const;
 
 /**
- * Generate image using Google Gemini 2.5 Flash Image
- * Free tier: 500 requests/day
+ * Generate image using Cloudflare Workers AI (FLUX.1 schnell)
+ * Free tier: 10,000 neurons/day
+ * Cost: ~$0.000053 per 512x512 tile
  */
-async function generateWithGemini(
+async function generateWithCloudflare(
   prompt: string,
   size: ImageSize
 ): Promise<ImageGenerationResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
 
-  if (!apiKey) {
+  if (!accountId || !apiToken) {
     return {
       url: "",
-      provider: "gemini",
+      provider: "cloudflare",
       success: false,
-      error: "GEMINI_API_KEY not configured",
+      error: "CLOUDFLARE_ACCOUNT_ID atau CLOUDFLARE_API_TOKEN belum dikonfigurasi",
     };
   }
 
   try {
-    // Use gemini-3.1-flash-image (Nano Banana 2) via Interactions API
-    const model = "gemini-3.1-flash-image";
+    const model = "@cf/black-forest-labs/flux-1-schnell";
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/interactions`,
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
       {
         method: "POST",
         headers: {
-          "x-goog-api-key": apiKey,
+          Authorization: `Bearer ${apiToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model,
-          input: [
-            {
-              type: "text",
-              text: `Generate a high-quality image based on this description: ${prompt}. Make it detailed, vivid, and visually appealing.`,
-            },
-          ],
+          prompt,
+          steps: 4,
+          seed: Math.floor(Math.random() * 100000),
         }),
       }
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      let errorMsg = `Gemini API error: ${response.status}`;
+      let errorMsg = `Cloudflare API error: ${response.status}`;
       if (response.status === 429) {
-        errorMsg = "Kuota Gemini gratis sudah habis (rate limit). Coba lagi besok atau gunakan provider lain.";
+        errorMsg = "Kuota Cloudflare gratis sudah habis. Coba lagi besok.";
       }
       return {
         url: "",
-        provider: "gemini",
+        provider: "cloudflare",
         success: false,
         error: errorMsg,
       };
@@ -97,47 +89,27 @@ async function generateWithGemini(
 
     const data = await response.json();
 
-    // Extract image from Interactions API response
-    const outputImage = data.outputImage || data.output_image;
-    if (outputImage?.data) {
-      const mimeType = outputImage.mimeType || outputImage.mime_type || "image/png";
-      const dataUrl = `data:${mimeType};base64,${outputImage.data}`;
+    if (data.success && data.result?.image) {
+      const dataUrl = `data:image/jpeg;base64,${data.result.image}`;
       return {
         url: dataUrl,
-        provider: "gemini",
+        provider: "cloudflare",
         success: true,
       };
     }
 
-    // Fallback: check candidates (legacy format)
-    const candidates = data.candidates || [];
-    if (candidates.length > 0) {
-      const parts = candidates[0]?.content?.parts || [];
-      for (const part of parts) {
-        if (part.inlineData?.data) {
-          const mimeType = part.inlineData.mimeType || "image/png";
-          const dataUrl = `data:${mimeType};base64,${part.inlineData.data}`;
-          return {
-            url: dataUrl,
-            provider: "gemini",
-            success: true,
-          };
-        }
-      }
-    }
-
     return {
       url: "",
-      provider: "gemini",
+      provider: "cloudflare",
       success: false,
-      error: "No image in response",
+      error: "No image in Cloudflare response",
     };
   } catch (error) {
     return {
       url: "",
-      provider: "gemini",
+      provider: "cloudflare",
       success: false,
-      error: `Gemini error: ${error instanceof Error ? error.message : "Unknown"}`,
+      error: `Cloudflare error: ${error instanceof Error ? error.message : "Unknown"}`,
     };
   }
 }
@@ -175,129 +147,40 @@ async function generateWithPollinations(
 }
 
 /**
- * Generate image using FLUX 1.1 Pro via fal.ai
- * Cost: $0.04 per image
- */
-async function generateWithFLUX(
-  prompt: string,
-  size: ImageSize
-): Promise<ImageGenerationResult> {
-  const apiKey = process.env.FAL_API_KEY;
-
-  if (!apiKey) {
-    return {
-      url: "",
-      provider: "flux",
-      success: false,
-      error: "FAL_API_KEY not configured",
-    };
-  }
-
-  try {
-    const imageSize =
-      size === "1024"
-        ? "landscape_16_9"
-        : size === "768"
-          ? "square_hd"
-          : "square";
-
-    const response = await fetch("https://fal.run/fal-ai/flux-pro/v1.1", {
-      method: "POST",
-      headers: {
-        Authorization: `Key ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt,
-        image_size: imageSize,
-        num_inference_steps: 28,
-        guidance_scale: 3.5,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return {
-        url: "",
-        provider: "flux",
-        success: false,
-        error: `FLUX API error: ${response.status}`,
-      };
-    }
-
-    const data = await response.json();
-
-    if (data.images && data.images.length > 0) {
-      return {
-        url: data.images[0].url,
-        provider: "flux",
-        success: true,
-      };
-    }
-
-    return {
-      url: "",
-      provider: "flux",
-      success: false,
-      error: "No images in response",
-    };
-  } catch (error) {
-    return {
-      url: "",
-      provider: "flux",
-      success: false,
-      error: `FLUX error: ${error instanceof Error ? error.message : "Unknown"}`,
-    };
-  }
-}
-
-/**
  * Hybrid image generation with automatic fallback
- * Priority: Gemini → Pollinations → FLUX
+ * Priority: Cloudflare → Pollinations
  */
 export async function generateImageHybrid(
   prompt: string,
   options: ImageGenerationOptions = {}
 ): Promise<ImageGenerationResult> {
   const {
-    provider = "gemini",
+    provider = "cloudflare",
     size = "1024",
     seed,
   } = options;
 
   // If specific provider requested, try only that
-  if (provider === "gemini") {
-    return generateWithGemini(prompt, size);
+  if (provider === "cloudflare") {
+    return generateWithCloudflare(prompt, size);
   }
 
   if (provider === "pollinations") {
     return generateWithPollinations(prompt, size, seed);
   }
 
-  if (provider === "flux") {
-    return generateWithFLUX(prompt, size);
-  }
-
   // Auto fallback mode
-  // Try Pollinations first (free, no quota issues)
+  // Try Cloudflare first (better quality)
+  const cloudflareResult = await generateWithCloudflare(prompt, size);
+  if (cloudflareResult.success) {
+    return cloudflareResult;
+  }
+
+  console.log("[ImageGen] Cloudflare failed, trying Pollinations...");
+
+  // Fallback to Pollinations (free, no quota issues)
   const pollinationsResult = await generateWithPollinations(prompt, size, seed);
-  if (pollinationsResult.success) {
-    return pollinationsResult;
-  }
-
-  console.log("[ImageGen] Pollinations failed, trying Gemini...");
-
-  // Fallback to Gemini (free, but quota limited)
-  const geminiResult = await generateWithGemini(prompt, size);
-  if (geminiResult.success) {
-    return geminiResult;
-  }
-
-  console.log("[ImageGen] Gemini failed, trying FLUX...");
-
-  // Fallback to FLUX (paid)
-  const fluxResult = await generateWithFLUX(prompt, size);
-  return fluxResult;
+  return pollinationsResult;
 }
 
 /**

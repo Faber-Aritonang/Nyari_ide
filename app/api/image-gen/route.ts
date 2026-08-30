@@ -1,5 +1,5 @@
 // app/api/image-gen/route.ts — Hybrid Text-to-Image API
-// POST: Generate image using hybrid provider (Gemini → Pollinations → FLUX)
+// POST: Generate image using hybrid provider (Cloudflare → Pollinations)
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     // Generate image with hybrid provider
     const result = await generateImageHybrid(prompt, {
-      provider: (provider as ImageProvider) || "gemini",
+      provider: (provider as ImageProvider) || "cloudflare",
       size: (size as ImageSize) || "1024",
     });
 
