@@ -59,26 +59,24 @@ async function generateWithGemini(
   }
 
   try {
-    // Use gemini-2.5-flash-image for image generation
-    const model = "gemini-2.5-flash-image";
+    // Use gemini-3.1-flash-image (Nano Banana 2) via Interactions API
+    const model = "gemini-3.1-flash-image";
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/interactions`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "x-goog-api-key": apiKey,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          contents: [
+          model,
+          input: [
             {
-              parts: [
-                {
-                  text: `Generate a high-quality image based on this description: ${prompt}. Make it detailed, vivid, and visually appealing.`,
-                },
-              ],
+              type: "text",
+              text: `Generate a high-quality image based on this description: ${prompt}. Make it detailed, vivid, and visually appealing.`,
             },
           ],
-          generationConfig: {
-            responseModalities: ["TEXT", "IMAGE"],
-          },
         }),
       }
     );
@@ -95,28 +93,32 @@ async function generateWithGemini(
 
     const data = await response.json();
 
-    // Extract image from response
-    const candidates = data.candidates || [];
-    if (candidates.length === 0) {
+    // Extract image from Interactions API response
+    const outputImage = data.outputImage || data.output_image;
+    if (outputImage?.data) {
+      const mimeType = outputImage.mimeType || outputImage.mime_type || "image/png";
+      const dataUrl = `data:${mimeType};base64,${outputImage.data}`;
       return {
-        url: "",
+        url: dataUrl,
         provider: "gemini",
-        success: false,
-        error: "No candidates in response",
+        success: true,
       };
     }
 
-    const parts = candidates[0]?.content?.parts || [];
-    for (const part of parts) {
-      if (part.inlineData?.data) {
-        // Convert base64 to data URL
-        const mimeType = part.inlineData.mimeType || "image/png";
-        const dataUrl = `data:${mimeType};base64,${part.inlineData.data}`;
-        return {
-          url: dataUrl,
-          provider: "gemini",
-          success: true,
-        };
+    // Fallback: check candidates (legacy format)
+    const candidates = data.candidates || [];
+    if (candidates.length > 0) {
+      const parts = candidates[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          const mimeType = part.inlineData.mimeType || "image/png";
+          const dataUrl = `data:${mimeType};base64,${part.inlineData.data}`;
+          return {
+            url: dataUrl,
+            provider: "gemini",
+            success: true,
+          };
+        }
       }
     }
 
