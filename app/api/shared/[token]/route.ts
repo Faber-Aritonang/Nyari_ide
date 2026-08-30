@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   _request: NextRequest,
@@ -71,7 +72,7 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (msgError) {
-      console.error("Failed to fetch messages:", msgError);
+      logger.error("Failed to fetch messages:", msgError);
       return NextResponse.json(
         { error: "Failed to fetch messages" },
         { status: 500 }
@@ -84,7 +85,7 @@ export async function GET(
       messages: messages || [],
     });
   } catch (error) {
-    console.error("Shared conversation error:", error);
+    logger.error("Shared conversation error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

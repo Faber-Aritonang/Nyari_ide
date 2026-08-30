@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(
   request: NextRequest,
@@ -52,7 +53,7 @@ export async function PATCH(
       .eq("id", id);
 
     if (updateError) {
-      console.error("Failed to update reaction:", updateError);
+      logger.error("Failed to update reaction:", updateError);
       return NextResponse.json(
         { error: "Failed to update reaction" },
         { status: 500 }
@@ -61,7 +62,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, reaction });
   } catch (error) {
-    console.error("Reaction error:", error);
+    logger.error("Reaction error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

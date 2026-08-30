@@ -10,6 +10,7 @@ import { IMAGE_PROVIDERS, type ImageProvider } from "@/lib/image-gen";
 import { startRecording, stopRecording } from "@/lib/voice-utils";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme-context";
+import { parseSSEStream } from "@/lib/sse-utils";
 import ImageGallery from "@/app/components/ImageGallery";
 import UsageDashboard from "@/app/components/UsageDashboard";
 
@@ -73,16 +74,17 @@ export default function ChatPage() {
       }
       setEmail(data.user.email ?? "");
 
-      const res = await fetch("/api/conversations");
-      if (res.ok) {
-        const convs = await res.json();
-        setConversations(convs);
-        if (convs.length > 0) {
-          setActiveConvId(convs[0].id);
-        }
-      }
+      // Parallel fetch conversations + models (saves ~200-500ms)
+      const [convsRes, modelsRes] = await Promise.all([
+        fetch("/api/conversations"),
+        fetch("/api/models"),
+      ]);
 
-      const modelsRes = await fetch("/api/models");
+      if (convsRes.ok) {
+        const convs = await convsRes.json();
+        setConversations(convs);
+        if (convs.length > 0) setActiveConvId(convs[0].id);
+      }
       if (modelsRes.ok) {
         const modelList = await modelsRes.json();
         setModels(modelList);
@@ -466,42 +468,19 @@ export default function ChatPage() {
         return;
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) { setSending(false); return; }
-
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith("data: ")) continue;
-          const data = trimmed.slice(6);
-          if (data === "[DONE]") break;
-
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.content) {
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                updated[lastIdx] = {
-                  role: "assistant",
-                  content: (updated[lastIdx]?.content ?? "") + parsed.content,
-                };
-                return updated;
-              });
-            }
-          } catch { /* skip */ }
-        }
-      }
+      await parseSSEStream(response, {
+        onContent: (content) => {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            updated[lastIdx] = {
+              role: "assistant",
+              content: (updated[lastIdx]?.content ?? "") + content,
+            };
+            return updated;
+          });
+        },
+      });
     } catch {
       setMessages((prev) => {
         const updated = [...prev];
@@ -574,39 +553,19 @@ export default function ChatPage() {
         return;
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) { setSending(false); return; }
-
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith("data: ")) continue;
-          const data = trimmed.slice(6);
-          if (data === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.content) {
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                updated[lastIdx] = {
-                  role: "assistant",
-                  content: (updated[lastIdx]?.content ?? "") + parsed.content,
-                };
-                return updated;
-              });
-            }
-          } catch { /* skip */ }
-        }
-      }
+      await parseSSEStream(response, {
+        onContent: (content) => {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            updated[lastIdx] = {
+              role: "assistant",
+              content: (updated[lastIdx]?.content ?? "") + content,
+            };
+            return updated;
+          });
+        },
+      });
     } catch {
       setMessages((prev) => {
         const updated = [...prev];
@@ -660,39 +619,19 @@ export default function ChatPage() {
         return;
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) { setSending(false); return; }
-
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith("data: ")) continue;
-          const data = trimmed.slice(6);
-          if (data === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.content) {
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                updated[lastIdx] = {
-                  role: "assistant",
-                  content: (updated[lastIdx]?.content ?? "") + parsed.content,
-                };
-                return updated;
-              });
-            }
-          } catch { /* skip */ }
-        }
-      }
+      await parseSSEStream(response, {
+        onContent: (content) => {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            updated[lastIdx] = {
+              role: "assistant",
+              content: (updated[lastIdx]?.content ?? "") + content,
+            };
+            return updated;
+          });
+        },
+      });
     } catch {
       setMessages((prev) => {
         const updated = [...prev];

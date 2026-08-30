@@ -1,6 +1,8 @@
 // lib/rag/embeddings.ts — Embedding service untuk RAG
 // Menggunakan TF-IDF sederhana (tanpa API external) atau OpenAI ada-002
 
+import { logger } from "@/lib/logger";
+
 export const EMBEDDING_DIMENSIONS = 1536;
 export const CHUNK_SIZE = 500; // karakter per chunk
 export const CHUNK_OVERLAP = 50; // overlap antar chunk
@@ -96,7 +98,7 @@ export async function generateOpenAIEmbedding(text: string): Promise<number[]> {
   
   if (!apiKey) {
     // Fallback ke simple embedding
-    console.warn("OPENAI_API_KEY not found, using simple embedding");
+    logger.warn("OPENAI_API_KEY not found, using simple embedding");
     return generateSimpleEmbedding(text);
   }
 

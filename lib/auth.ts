@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { logger } from "@/lib/logger";
 
 export async function isEmailAllowed(email: string): Promise<boolean> {
   const supabase = createClient();
@@ -10,7 +11,7 @@ export async function isEmailAllowed(email: string): Promise<boolean> {
     .maybeSingle();
 
   if (error) {
-    console.error("Whitelist check error:", error);
+    logger.error("Whitelist check error:", error);
     return false;
   }
   return data !== null;

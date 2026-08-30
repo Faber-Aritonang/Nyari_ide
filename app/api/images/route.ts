@@ -3,6 +3,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -36,7 +37,7 @@ export async function GET() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("[images] Error fetching images:", error);
+      logger.error("[images] Error fetching images:", error);
       return NextResponse.json({ error: "Failed to fetch images" }, { status: 500 });
     }
 
@@ -60,7 +61,7 @@ export async function GET() {
 
     return NextResponse.json({ images });
   } catch (error) {
-    console.error("[images] Error:", error);
+    logger.error("[images] Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

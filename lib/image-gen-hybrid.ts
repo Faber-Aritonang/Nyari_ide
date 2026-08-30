@@ -2,6 +2,8 @@
 // Supports: Pollinations.ai (free, no key), Cloudflare Workers AI (free tier)
 // Strategy: Cloudflare (quality) → Pollinations (fallback)
 
+import { logger } from "@/lib/logger";
+
 export type ImageProvider = "cloudflare" | "pollinations";
 export type ImageSize = "512" | "768" | "1024";
 
@@ -73,7 +75,7 @@ async function generateWithCloudflare(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("[Cloudflare] Error response:", JSON.stringify(errorData));
+      logger.error("[Cloudflare] Error response:", JSON.stringify(errorData));
       const detail = errorData.errors?.[0]?.message || errorData.error || "";
       let errorMsg = `Cloudflare API error: ${response.status}`;
       if (detail) errorMsg += ` — ${detail}`;
@@ -177,7 +179,7 @@ export async function generateImageHybrid(
     return cloudflareResult;
   }
 
-  console.log("[ImageGen] Cloudflare failed, trying Pollinations...");
+  logger.log("[ImageGen] Cloudflare failed, trying Pollinations...");
 
   // Fallback to Pollinations (free, no quota issues)
   const pollinationsResult = await generateWithPollinations(prompt, size, seed);

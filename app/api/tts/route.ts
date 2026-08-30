@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 // Voice options per model
 const EN_VOICES = ["hannah", "diana", "autumn", "austin", "daniel", "troy"] as const;
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     if (!groqResponse.ok) {
       const errBody = await groqResponse.text();
-      console.error("Groq TTS error:", groqResponse.status, errBody);
+      logger.error("Groq TTS error:", groqResponse.status, errBody);
 
       if (groqResponse.status === 429) {
         return NextResponse.json(
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("TTS API error:", error);
+    logger.error("TTS API error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { AVAILABLE_MODELS, DEFAULT_MODEL, CHAT_CONFIG, SYSTEM_PROMPT } from "@/lib/groq";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (saveUserMsgError) {
-      console.error("Failed to save user message:", saveUserMsgError);
+      logger.error("Failed to save user message:", saveUserMsgError);
       return NextResponse.json(
         { error: "Failed to save message" },
         { status: 500 }
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
       const { retrieveContext } = await import("@/lib/rag/search");
       ragContext = await retrieveContext(message.trim(), user.id, 1500);
     } catch (err) {
-      console.error("RAG retrieval error (non-critical):", err);
+      logger.error("RAG retrieval error (non-critical):", err);
       // RAG gagal, lanjut tanpa context
     }
 
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
 
     if (!groqResponse.ok) {
       const errBody = await groqResponse.text();
-      console.error("Groq API error:", groqResponse.status, errBody);
+      logger.error("Groq API error:", groqResponse.status, errBody);
 
       if (groqResponse.status === 429) {
         return NextResponse.json(
@@ -261,7 +262,7 @@ export async function POST(request: NextRequest) {
                       { role: "assistant", content: fullContent },
                     ]);
                   } catch (err) {
-                    console.error("RAG indexing error (non-critical):", err);
+                    logger.error("RAG indexing error (non-critical):", err);
                   }
                 }
                 controller.enqueue(encoder.encode("data: [DONE]\n\n"));
@@ -284,7 +285,7 @@ export async function POST(request: NextRequest) {
             }
           }
         } catch (err) {
-          console.error("Stream processing error:", err);
+          logger.error("Stream processing error:", err);
         }
 
         // Fallback: save accumulated content if [DONE] wasn't received
@@ -309,7 +310,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Chat API error:", error);
+    logger.error("Chat API error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

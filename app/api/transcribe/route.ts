@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     if (!groqResponse.ok) {
       const errBody = await groqResponse.text();
-      console.error("Groq Whisper error:", groqResponse.status, errBody);
+      logger.error("Groq Whisper error:", groqResponse.status, errBody);
 
       if (groqResponse.status === 429) {
         return NextResponse.json(
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     const result = await groqResponse.json();
     return NextResponse.json({ text: result.text || "" });
   } catch (error) {
-    console.error("Transcribe API error:", error);
+    logger.error("Transcribe API error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

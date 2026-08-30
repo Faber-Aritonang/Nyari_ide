@@ -8,6 +8,7 @@ import {
   type ImageProvider,
   type ImageSize,
 } from "@/lib/image-gen-hybrid";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("[image-gen] Request:", { provider, size, promptLength: prompt.length });
+    logger.log("[image-gen] Request:", { provider, size, promptLength: prompt.length });
 
     // Generate image with hybrid provider
     const result = await generateImageHybrid(prompt, {
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.success) {
-      console.error("[image-gen] Provider failed:", result.provider, result.error);
+      logger.error("[image-gen] Provider failed:", result.provider, result.error);
       return NextResponse.json(
         { error: result.error || "Image generation failed" },
         { status: 500 }
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
       provider: result.provider,
     });
   } catch (error) {
-    console.error("Image generation error:", error);
+    logger.error("Image generation error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   request: NextRequest,
@@ -73,7 +74,7 @@ export async function POST(
       .single();
 
     if (linkError) {
-      console.error("Failed to create share link:", linkError);
+      logger.error("Failed to create share link:", linkError);
       return NextResponse.json(
         { error: "Failed to create share link" },
         { status: 500 }
@@ -86,7 +87,7 @@ export async function POST(
       created_at: newLink.created_at,
     });
   } catch (error) {
-    console.error("Share link error:", error);
+    logger.error("Share link error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -118,7 +119,7 @@ export async function DELETE(
       .eq("user_id", user.id);
 
     if (error) {
-      console.error("Failed to delete share link:", error);
+      logger.error("Failed to delete share link:", error);
       return NextResponse.json(
         { error: "Failed to delete share link" },
         { status: 500 }
@@ -127,7 +128,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete share link error:", error);
+    logger.error("Delete share link error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

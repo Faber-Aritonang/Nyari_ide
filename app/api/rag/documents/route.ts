@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { chunkText, generateEmbedding } from "@/lib/rag/embeddings";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -24,13 +25,13 @@ export async function GET() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Failed to fetch documents:", error);
+      logger.error("Failed to fetch documents:", error);
       return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
     }
 
     return NextResponse.json({ documents: data || [] });
   } catch (error) {
-    console.error("GET documents error:", error);
+    logger.error("GET documents error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (docError) {
-      console.error("Failed to save document:", docError);
+      logger.error("Failed to save document:", docError);
       return NextResponse.json({ error: "Failed to save document" }, { status: 500 });
     }
 
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (chunkError) {
-        console.error("Failed to save chunk:", chunkError);
+        logger.error("Failed to save chunk:", chunkError);
         continue;
       }
 
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
       chunks_created: chunkCount,
     });
   } catch (error) {
-    console.error("POST documents error:", error);
+    logger.error("POST documents error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

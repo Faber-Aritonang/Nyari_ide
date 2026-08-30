@@ -3,6 +3,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -95,16 +96,24 @@ export async function GET() {
       .order("updated_at", { ascending: false })
       .limit(5);
 
-    // Get message counts for top conversations
-    const topConvWithCounts = await Promise.all(
-      topConversations?.map(async (conv) => {
-        const { count } = await supabase
+    // Get message counts for top conversations (1 query instead of N)
+    const topConvIds = topConversations?.map((c) => c.id) || [];
+    const { data: topConvMessages } = topConvIds.length > 0
+      ? await supabase
           .from("messages")
-          .select("id", { count: "exact", head: true })
-          .eq("conversation_id", conv.id);
-        return { ...conv, messageCount: count || 0 };
-      }) || []
-    );
+          .select("conversation_id")
+          .in("conversation_id", topConvIds)
+      : { data: [] };
+
+    const msgCountMap = new Map<string, number>();
+    topConvMessages?.forEach((m) => {
+      msgCountMap.set(m.conversation_id, (msgCountMap.get(m.conversation_id) || 0) + 1);
+    });
+
+    const topConvWithCounts = topConversations?.map((conv) => ({
+      ...conv,
+      messageCount: msgCountMap.get(conv.id) || 0,
+    })) || [];
 
     // 8. Account age
     const { data: profile } = await supabase
@@ -133,7 +142,7 @@ export async function GET() {
       topConversations: topConvWithCounts,
     });
   } catch (error) {
-    console.error("[usage] Error:", error);
+    logger.error("[usage] Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

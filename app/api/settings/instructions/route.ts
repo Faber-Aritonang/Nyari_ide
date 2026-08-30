@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -28,13 +29,13 @@ export async function GET() {
     }
 
     if (error) {
-      console.error("Failed to fetch custom instructions:", error);
+      logger.error("Failed to fetch custom instructions:", error);
       return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
     }
 
     return NextResponse.json({ instructions: data?.instructions || "" });
   } catch (error) {
-    console.error("GET instructions error:", error);
+    logger.error("GET instructions error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -73,13 +74,13 @@ export async function POST(request: NextRequest) {
     );
 
     if (error) {
-      console.error("Failed to save custom instructions:", error);
+      logger.error("Failed to save custom instructions:", error);
       return NextResponse.json({ error: "Failed to save" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, instructions: trimmed });
   } catch (error) {
-    console.error("POST instructions error:", error);
+    logger.error("POST instructions error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { generateEmbedding, cosineSimilarity } from "./embeddings";
+import { logger } from "@/lib/logger";
 
 export interface SearchResult {
   id: string;
@@ -47,7 +48,7 @@ export async function searchEmbeddings(
   });
 
   if (error) {
-    console.error("RAG search error:", error);
+    logger.error("RAG search error:", error);
     // Fallback ke simple text search
     return simpleTextSearch(query, userId, matchCount);
   }
@@ -85,7 +86,7 @@ async function simpleTextSearch(
     .limit(limit);
 
   if (error) {
-    console.error("Simple text search error:", error);
+    logger.error("Simple text search error:", error);
     return [];
   }
 
