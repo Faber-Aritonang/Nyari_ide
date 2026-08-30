@@ -83,11 +83,15 @@ async function generateWithGemini(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      let errorMsg = `Gemini API error: ${response.status}`;
+      if (response.status === 429) {
+        errorMsg = "Kuota Gemini gratis sudah habis (rate limit). Coba lagi besok atau gunakan provider lain.";
+      }
       return {
         url: "",
         provider: "gemini",
         success: false,
-        error: `Gemini API error: ${response.status}`,
+        error: errorMsg,
       };
     }
 
@@ -306,7 +310,7 @@ export function generateImageUrl(
 ): string {
   // For URL-based generation (sync), use Pollinations
   const encoded = encodeURIComponent(prompt);
-  let url = `https://image.pollinations.ai/prompt/${encoded}?width=${size}&height=${size}&model=gpt-image-2&nologo=true`;
+  let url = `https://image.pollinations.ai/prompt/${encoded}?width=${size}&height=${size}&model=flux`;
 
   if (seed !== undefined) {
     url += `&seed=${seed}`;
