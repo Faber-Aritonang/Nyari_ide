@@ -180,6 +180,12 @@
 - [x] Chat Templates — 8 template siap pakai (Coding, Writing, Brainstorm, Analysis, dll)
 - [x] Conversation Summary — AI buat ringkasan otomatis dari percakapan panjang
 
+## v2.6 — Code Execution & Import/Export ✅
+- [x] AI Code Execution — eksekusi kode JavaScript di browser (sandboxed iframe)
+- [x] Chat Import/Export JSON — export/import riwayat chat ke file JSON
+- [x] Message Reactions UI — 👍/👎 reaction pada jawaban AI
+- [x] Notification System — notifikasi browser saat AI selesai merespons
+
 ## Masa Depan (backlog)
 - [ ] Multi-language TTS (bahasa lain selain EN + AR)
 - [ ] Error boundaries di UI

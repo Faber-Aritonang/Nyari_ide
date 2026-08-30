@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import { downloadImage } from "@/lib/image-gen";
 import { t } from "@/lib/i18n";
+import CodeExecutor from "@/app/components/CodeExecutor";
 import "highlight.js/styles/github-dark.css";
 
 export interface Message {
@@ -235,6 +236,7 @@ export default function ChatMessage({ message, messageId, onRetry, onEdit, onRea
                   const codeEl = (children as React.ReactElement<{ children?: React.ReactNode; className?: string }>);
                   const codeText = String(codeEl?.props?.children || "");
                   const lang = codeEl?.props?.className?.replace("language-", "") || "";
+                  const canRun = lang === "javascript" || lang === "js";
                   return (
                     <div className="relative group mb-2 last:mb-0">
                       {lang && (
@@ -242,16 +244,24 @@ export default function ChatMessage({ message, messageId, onRetry, onEdit, onRea
                           {lang}
                         </div>
                       )}
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(codeText);
-                        }}
-                        className="absolute top-0 right-0 px-2 py-1 text-xs text-muted hover:text-foreground bg-code-bg hover:bg-surface-hover rounded-bl-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                        title="Copy code"
-                      >
-                        📋
-                      </button>
+                      <div className="absolute top-0 right-0 flex items-center gap-1 px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        {canRun && (
+                          <span className="text-xs text-green-400 bg-code-bg rounded-bl-lg px-1">
+                            ▶️
+                          </span>
+                        )}
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(codeText);
+                          }}
+                          className="text-xs text-muted hover:text-foreground bg-code-bg hover:bg-surface-hover rounded-bl-lg px-1"
+                          title="Copy code"
+                        >
+                          📋
+                        </button>
+                      </div>
                       <pre className="bg-code-bg rounded-lg p-3 overflow-x-auto" {...rest}>{children}</pre>
+                      {canRun && <CodeExecutor code={codeText} language={lang} />}
                     </div>
                   );
                 },

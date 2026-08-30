@@ -71,6 +71,18 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Send browser notification when AI finishes responding
+  function sendNotification() {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (document.hasFocus()) return; // Don't notify if tab is focused
+    if (Notification.permission === "granted") {
+      new Notification(t("notificationTitle"), {
+        body: t("notificationBody"),
+        icon: "/favicon.ico",
+      });
+    }
+  }
+
   // Get user info & conversations on mount
   useEffect(() => {
     async function init() {
@@ -125,6 +137,15 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -362,6 +383,7 @@ export default function ChatPage() {
       } catch (err) {
         console.error("Failed to save assistant message:", err);
       }
+      sendNotification();
     } catch (err) {
       setMessages((prev) => {
         const updated = [...prev];
@@ -499,8 +521,10 @@ export default function ChatPage() {
         return;
       }
 
+      let responseOk = false;
       await parseSSEStream(response, {
         onContent: (content) => {
+          responseOk = true;
           setMessages((prev) => {
             const updated = [...prev];
             const lastIdx = updated.length - 1;
@@ -512,6 +536,7 @@ export default function ChatPage() {
           });
         },
       });
+      if (responseOk) sendNotification();
     } catch {
       setMessages((prev) => {
         const updated = [...prev];
@@ -646,8 +671,10 @@ export default function ChatPage() {
         return;
       }
 
+      let responseOk = false;
       await parseSSEStream(response, {
         onContent: (content) => {
+          responseOk = true;
           setMessages((prev) => {
             const updated = [...prev];
             const lastIdx = updated.length - 1;
@@ -659,6 +686,7 @@ export default function ChatPage() {
           });
         },
       });
+      if (responseOk) sendNotification();
     } catch {
       setMessages((prev) => {
         const updated = [...prev];
@@ -889,6 +917,100 @@ export default function ChatPage() {
     } finally {
       document.body.removeChild(tempDiv);
     }
+  }
+
+  // Export chat as JSON
+  function exportChatJSON() {
+    if (messages.length === 0) return;
+
+    const convTitle = conversations.find((c) => c.id === activeConvId)?.title || "Chat";
+    const exportData = {
+      version: "2.6",
+      exportedAt: new Date().toISOString(),
+      conversation: {
+        id: activeConvId,
+        title: convTitle,
+      },
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+        image_url: msg.image_url || null,
+        generated_image_url: msg.generated_image_url || null,
+        reaction: msg.reaction || null,
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${convTitle.replace(/[^a-z0-9]/gi, "_").slice(0, 50)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Import chat from JSON
+  function importChatJSON() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        if (!data.messages || !Array.isArray(data.messages)) {
+          alert("Invalid JSON format");
+          return;
+        }
+
+        // Create new conversation
+        const res = await fetch("/api/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: data.conversation?.title || `Import: ${file.name.replace(".json", "")}`,
+          }),
+        });
+
+        if (!res.ok) throw new Error("Failed to create conversation");
+
+        const newConv = await res.json();
+        setConversations((prev) => [newConv, ...prev]);
+        setActiveConvId(newConv.id);
+
+        // Import messages one by one
+        for (const msg of data.messages) {
+          await fetch(`/api/conversations/${newConv.id}/messages`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              role: msg.role,
+              content: msg.content,
+              image_url: msg.image_url || null,
+              generated_image_url: msg.generated_image_url || null,
+            }),
+          });
+        }
+
+        // Reload messages
+        const msgsRes = await fetch(`/api/conversations/${newConv.id}/messages`);
+        if (msgsRes.ok) {
+          const msgs = await msgsRes.json();
+          setMessages(msgs);
+        }
+
+        alert(`Imported ${data.messages.length} messages successfully!`);
+      } catch (err) {
+        alert(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      }
+    };
+    input.click();
   }
 
   async function handleShare() {
@@ -1137,6 +1259,20 @@ export default function ChatPage() {
                 title="Export as PDF"
               >
                 📄 Export PDF
+              </button>
+              <button
+                onClick={exportChatJSON}
+                className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
+                title="Export as JSON"
+              >
+                📦 Export JSON
+              </button>
+              <button
+                onClick={importChatJSON}
+                className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
+                title="Import from JSON"
+              >
+                📥 Import JSON
               </button>
               <button
                 onClick={handleShare}

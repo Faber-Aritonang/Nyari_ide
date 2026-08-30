@@ -98,6 +98,11 @@ const strings = {
     exportChat: "Export chat",
     exportMd: "Download sebagai Markdown",
     copiedToClipboard: "Pesan tersalin ke clipboard!",
+    notificationTitle: "Nyari_ide",
+    notificationBody: "AI sudah selesai merespons!",
+    enableNotification: "Aktifkan notifikasi",
+    notificationEnabled: "Notifikasi aktif",
+    notificationDenied: "Notifikasi diblokir oleh browser",
 
     // Errors
     networkError: "Terjadi kesalahan jaringan. Coba lagi.",
@@ -199,6 +204,11 @@ const strings = {
     exportChat: "Export chat",
     exportMd: "Download as Markdown",
     copiedToClipboard: "Message copied to clipboard!",
+    notificationTitle: "Nyari_ide",
+    notificationBody: "AI has finished responding!",
+    enableNotification: "Enable notifications",
+    notificationEnabled: "Notifications active",
+    notificationDenied: "Notifications blocked by browser",
 
     // Errors
     networkError: "Network error. Please try again.",
