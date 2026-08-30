@@ -37,6 +37,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log("[image-gen] Request:", { provider, size, promptLength: prompt.length });
+
     // Generate image with hybrid provider
     const result = await generateImageHybrid(prompt, {
       provider: (provider as ImageProvider) || "cloudflare",
@@ -44,6 +46,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.success) {
+      console.error("[image-gen] Provider failed:", result.provider, result.error);
       return NextResponse.json(
         { error: result.error || "Image generation failed" },
         { status: 500 }
