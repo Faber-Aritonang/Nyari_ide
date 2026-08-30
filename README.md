@@ -1,6 +1,6 @@
 # Nyari_ide 🧠💡
 
-![Version](https://img.shields.io/badge/version-v2.1-blue)
+![Version](https://img.shields.io/badge/version-v2.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![Supabase](https://img.shields.io/badge/Supabase-Database-3FCF8E)
@@ -27,7 +27,7 @@ Pengguna yang sudah login dapat:
 | 💬 Chat text | Bertanya/jawab dengan LLM opensource (Qwen 3.8 27B via Groq API), respons streaming |
 | 🖼️ Upload gambar | Kirim gambar → AI menganalisis (compressed otomatis 512x512) |
 | 📄 Upload file | Kirim file teks/PDF → AI membaca & menjawab (pdf.js client-side) |
-| 🎨 Text-to-image | Menulis prompt → AI membuat gambar (GPT Image 2 via Pollinations.ai) |
+| 🎨 Text-to-image | Menulis prompt → AI membuat gambar (Cloudflare FLUX + Pollinations.ai, gratis) |
 | 🔊 Text-to-speech | Suara AI membacakan jawaban (Groq Orpheus — English + Arabic Saudi) |
 | 🎤 Voice input | Bicara ke mikrofon → diubah jadi teks (Whisper Large v3 Turbo) |
 | 🔄 Model selector | Pilih model AI: Qwen 3.8/3.6, GPT-OSS 120B/20B |
@@ -61,7 +61,8 @@ Next.js Web App ──► Supabase Auth (whitelist maks 10 akun)
 │                    Supabase DB (riwayat chat per user)
 │
 ├──► Groq API : chat text + vision + whisper + Orpheus TTS (LLM opensource)
-├──► Pollinations.ai : text-to-image (GPT Image 2)
+├──► Cloudflare Workers AI : text-to-image (FLUX.1 schnell)
+├──► Pollinations.ai : text-to-image (fallback, gratis)
 └──► Admin page : manajemen whitelist
 ```
 
@@ -71,12 +72,13 @@ Semua API key tersimpan **hanya di sisi server** — tidak pernah terekspos di b
 
 ## 📊 Status Proyek
 
-> **v2.1 RILIS!** ✅ RAG Hybrid — AI mengingat dokumen & percakapan sebelumnya.
+> **v2.2 RILIS!** ✅ Image Generation Overhaul — Cloudflare FLUX (gratis 10K/day) + Pollinations fallback.
 
 Aplikasi ini sudah bisa dicoba langsung di: **[nyari-ide.vercel.app](https://nyari-ide.vercel.app)**
 
 | Version | Release |
 |---------|---------|
+| v2.2 | [Image Generation Overhaul](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.2) |
 | v2.1 | [RAG Hybrid](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.1) |
 | v2.0 | [Custom Instructions](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.0) |
 | v1.1 | [Regenerasi, Copy, Edit, Export, Keyboard Shortcuts](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v1.1) |
@@ -125,7 +127,7 @@ Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 | LLM | Groq API — Qwen 3.8/3.6, GPT-OSS 120B/20B (opensource) |
 | TTS | Groq Orpheus — English (hannah) + Arabic Saudi (noura) |
 | Voice input | Whisper Large v3 Turbo via Groq |
-| Text-to-image | Pollinations.ai (GPT Image 2) |
+| Text-to-image | Cloudflare Workers AI (FLUX.1) + Pollinations.ai (fallback) |
 | PDF extraction | pdfjs-dist (client-side) |
 | Auth + Database | Supabase (email+password, PostgreSQL, RLS) |
 | Deploy | Vercel (free tier) |
