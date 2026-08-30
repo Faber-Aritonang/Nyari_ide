@@ -15,23 +15,36 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 1. Total conversations
-    const { count: totalConversations } = await supabase
+    // Get user's conversation IDs (messages don't have user_id directly)
+    const { data: userConversations } = await supabase
       .from("conversations")
-      .select("id", { count: "exact", head: true })
+      .select("id")
       .eq("user_id", user.id);
+
+    const convIds = userConversations?.map((c) => c.id) || [];
+
+    // 1. Total conversations
+    const totalConversations = convIds.length;
+
+    if (convIds.length === 0) {
+      return NextResponse.json({
+        stats: { totalConversations: 0, totalMessages: 0, userMessages: 0, assistantMessages: 0, totalImages: 0, totalDocuments: 0, accountAge: 0 },
+        messagesByDay: {},
+        topConversations: [],
+      });
+    }
 
     // 2. Total messages
     const { count: totalMessages } = await supabase
       .from("messages")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id);
+      .in("conversation_id", convIds);
 
     // 3. Messages by role (user vs assistant)
     const { data: messagesByRole } = await supabase
       .from("messages")
       .select("role")
-      .eq("user_id", user.id);
+      .in("conversation_id", convIds);
 
     const userMessages = messagesByRole?.filter((m) => m.role === "user").length || 0;
     const assistantMessages = messagesByRole?.filter((m) => m.role === "assistant").length || 0;
@@ -40,7 +53,7 @@ export async function GET() {
     const { count: totalImages } = await supabase
       .from("messages")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
+      .in("conversation_id", convIds)
       .not("generated_image_url", "is", null);
 
     // 5. Messages per day (last 7 days)
@@ -50,7 +63,7 @@ export async function GET() {
     const { data: recentMessages } = await supabase
       .from("messages")
       .select("created_at")
-      .eq("user_id", user.id)
+      .in("conversation_id", convIds)
       .gte("created_at", sevenDaysAgo.toISOString());
 
     // Group by day

@@ -15,11 +15,23 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch all messages with generated images
+    // Fetch user's conversation IDs first
+    const { data: userConversations } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("user_id", user.id);
+
+    const convIds = userConversations?.map((c) => c.id) || [];
+
+    if (convIds.length === 0) {
+      return NextResponse.json({ images: [] });
+    }
+
+    // Fetch all messages with generated images from user's conversations
     const { data: messages, error } = await supabase
       .from("messages")
       .select("id, content, generated_image_url, created_at, conversation_id")
-      .eq("user_id", user.id)
+      .in("conversation_id", convIds)
       .not("generated_image_url", "is", null)
       .order("created_at", { ascending: false });
 
