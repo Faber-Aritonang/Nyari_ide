@@ -1,6 +1,6 @@
 # Nyari_ide 🧠💡
 
-![Version](https://img.shields.io/badge/version-v2.4-blue)
+![Version](https://img.shields.io/badge/version-v2.5-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![Supabase](https://img.shields.io/badge/Supabase-Database-3FCF8E)
@@ -33,6 +33,9 @@ Pengguna yang sudah login dapat:
 | 🖼️ Image Gallery | Galeri semua gambar yang pernah di-generate AI |
 | 📚 Prompt Library | Simpan & reuse prompt favorit |
 | 🌿 Conversation Branching | Cabang percakapan dari pesan tertentu |
+| 📋 Chat Templates | Template percakapan siap pakai (Coding, Writing, Brainstorm, dll) |
+| 📝 Conversation Summary | AI buat ringkasan otomatis dari percakapan panjang |
+| 📄 Export PDF | Export percakapan ke PDF |
 | 📊 Usage Dashboard | Statistik penggunaan: pesan, gambar, dokumen, aktivitas 7 hari |
 | 🔊 Text-to-speech | Suara AI membacakan jawaban (Groq Orpheus — English + Arabic Saudi) |
 | 🎤 Voice input | Bicara ke mikrofon → diubah jadi teks (Whisper Large v3 Turbo) |
@@ -80,12 +83,13 @@ Semua API key tersimpan **hanya di sisi server** — tidak pernah terekspos di b
 
 ## 📊 Status Proyek
 
-> **v2.4 RILIS!** ✅ AI Personal Coach — Code Highlighting, Conversation Branching, Prompt Library, Image Regeneration, AI Persona.
+> **v2.5 RILIS!** ✅ Export PDF, Chat Templates, Conversation Summary.
 
 Aplikasi ini sudah bisa dicoba langsung di: **[nyari-ide.vercel.app](https://nyari-ide.vercel.app)**
 
 | Version | Release |
 |---------|---------|
+| v2.5 | [Export PDF + Chat Templates + Conversation Summary](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.5) |
 | v2.4 | [AI Personal Coach + Code Highlighting + Branching](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.4) |
 | v2.3 | [Performance Optimization + Gallery + Dashboard](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.3) |
 | v2.2 | [Image Generation Overhaul](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v2.2) |

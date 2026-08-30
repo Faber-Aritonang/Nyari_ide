@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import ChatMessage, { type Message } from "@/app/components/ChatMessage";
 import { compressImage } from "@/lib/image-utils";
 import { readTextFile, extractPdfText } from "@/lib/file-utils";
@@ -14,6 +16,8 @@ import { parseSSEStream } from "@/lib/sse-utils";
 import ImageGallery from "@/app/components/ImageGallery";
 import UsageDashboard from "@/app/components/UsageDashboard";
 import PromptLibrary from "@/app/components/PromptLibrary";
+import ChatTemplates from "@/app/components/ChatTemplates";
+import { type ChatTemplate } from "@/lib/chat-templates";
 
 interface Conversation {
   id: string;
@@ -54,6 +58,7 @@ export default function ChatPage() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [promptsOpen, setPromptsOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{
     message_id: string;
@@ -453,6 +458,73 @@ export default function ChatPage() {
     setSending(false);
   }
 
+  // Generate conversation summary
+  async function handleSummarize() {
+    if (sending || !activeConvId || messages.length < 4) return;
+
+    setSending(true);
+    setMessages((prev) => [...prev, { role: "user", content: "📝 Summarize this conversation" }]);
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+    // Build conversation context for summary
+    const conversationText = messages
+      .filter((m) => m.content && !m.isError)
+      .map((m) => `${m.role === "user" ? "User" : "AI"}: ${m.content}`)
+      .join("\n");
+
+    const summaryPrompt = `Ringkas percakapan berikut dalam poin-poin penting (max 10 poin). Fokus pada ide utama, keputusan, dan action items.\n\n${conversationText}`;
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: activeConvId,
+          message: summaryPrompt,
+          model: selectedModel,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: t("networkError") }));
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: `❌ ${err.error || t("networkError")}`,
+          };
+          return updated;
+        });
+        setSending(false);
+        return;
+      }
+
+      await parseSSEStream(response, {
+        onContent: (content) => {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            updated[lastIdx] = {
+              role: "assistant",
+              content: (updated[lastIdx]?.content ?? "") + content,
+            };
+            return updated;
+          });
+        },
+      });
+    } catch {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content: `❌ ${t("networkError")}`,
+        };
+        return updated;
+      });
+    }
+    setSending(false);
+  }
+
   // Handle reaction (like/dislike)
   async function handleReaction(messageId: string, reaction: "like" | "dislike" | null) {
     try {
@@ -774,6 +846,51 @@ export default function ChatPage() {
     URL.revokeObjectURL(url);
   }
 
+  // Export chat as PDF
+  async function exportChatPDF() {
+    if (messages.length === 0) return;
+
+    const convTitle = conversations.find((c) => c.id === activeConvId)?.title || "Chat";
+
+    // Create a temporary div for rendering
+    const tempDiv = document.createElement("div");
+    tempDiv.style.cssText = "position:fixed;left:-9999px;top:0;width:800px;padding:40px;background:white;color:black;font-family:sans-serif;";
+
+    let html = `<h1 style="font-size:24px;margin-bottom:8px;">${convTitle}</h1>`;
+    html += `<p style="color:#666;font-size:12px;margin-bottom:24px;">Exported from Nyari_ide — ${new Date().toLocaleDateString("id-ID")}</p>`;
+
+    for (const msg of messages) {
+      const role = msg.role === "user" ? "You" : "AI";
+      const bgColor = msg.role === "user" ? "#f0f0f0" : "#e8f4e8";
+      html += `<div style="margin-bottom:16px;padding:12px;border-radius:8px;background:${bgColor};">`;
+      html += `<strong style="font-size:12px;color:#333;">${role}</strong>`;
+      html += `<p style="margin:4px 0 0 0;font-size:14px;white-space:pre-wrap;">${msg.content}</p>`;
+      if (msg.generated_image_url) {
+        html += `<img src="${msg.generated_image_url}" style="max-width:100%;max-height:300px;margin-top:8px;border-radius:4px;" />`;
+      }
+      html += `</div>`;
+    }
+
+    tempDiv.innerHTML = html;
+    document.body.appendChild(tempDiv);
+
+    try {
+      const canvas = await html2canvas(tempDiv, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${convTitle.replace(/[^a-z0-9]/gi, "_").slice(0, 50)}.pdf`);
+    } catch (err) {
+      console.error("PDF export error:", err);
+      alert("Failed to export PDF");
+    } finally {
+      document.body.removeChild(tempDiv);
+    }
+  }
+
   async function handleShare() {
     if (!activeConvId) return;
 
@@ -899,6 +1016,13 @@ export default function ChatPage() {
         {/* Quick actions */}
         <div className="px-3 pb-2 flex gap-2">
           <button
+            onClick={() => setTemplatesOpen(true)}
+            className="flex-1 rounded-lg bg-input-bg hover:bg-surface-hover border border-border-theme py-2 text-sm transition-colors flex items-center justify-center gap-1"
+            title={lang === "id" ? "Template" : "Templates"}
+          >
+            📋
+          </button>
+          <button
             onClick={() => setGalleryOpen(true)}
             className="flex-1 rounded-lg bg-input-bg hover:bg-surface-hover border border-border-theme py-2 text-sm transition-colors flex items-center justify-center gap-1"
           >
@@ -990,12 +1114,29 @@ export default function ChatPage() {
           )}
           {activeConvId && messages.length > 0 && (
             <>
+              {messages.length >= 4 && (
+                <button
+                  onClick={handleSummarize}
+                  disabled={sending}
+                  className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2 disabled:opacity-50"
+                  title={lang === "id" ? "Ringkas percakapan" : "Summarize conversation"}
+                >
+                  📝 {lang === "id" ? "Ringkas" : "Summarize"}
+                </button>
+              )}
               <button
                 onClick={exportChat}
                 className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
                 title={t("exportMd")}
               >
-                📥 {t("exportChat")}
+                📥 {t("exportChat")} (MD)
+              </button>
+              <button
+                onClick={exportChatPDF}
+                className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
+                title="Export as PDF"
+              >
+                📄 Export PDF
               </button>
               <button
                 onClick={handleShare}
@@ -1198,6 +1339,17 @@ export default function ChatPage() {
         isOpen={promptsOpen}
         onClose={() => setPromptsOpen(false)}
         onSelect={(prompt) => setInput(prompt)}
+        lang={lang}
+      />
+
+      {/* Chat Templates Modal */}
+      <ChatTemplates
+        isOpen={templatesOpen}
+        onClose={() => setTemplatesOpen(false)}
+        onSelect={(template) => {
+          setInput(template.initialMessage[lang]);
+          setImageGenMode(false);
+        }}
         lang={lang}
       />
     </div>

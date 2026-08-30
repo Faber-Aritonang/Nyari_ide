@@ -175,6 +175,11 @@
 - [x] API route /api/prompts — CRUD prompt library
 - [x] Database table saved_prompts dengan RLS
 
+## v2.5 — Export & Templates ✅
+- [x] Export to PDF — export percakapan ke PDF (jspdf + html2canvas)
+- [x] Chat Templates — 8 template siap pakai (Coding, Writing, Brainstorm, Analysis, dll)
+- [x] Conversation Summary — AI buat ringkasan otomatis dari percakapan panjang
+
 ## Masa Depan (backlog)
 - [ ] Multi-language TTS (bahasa lain selain EN + AR)
 - [ ] Error boundaries di UI
