@@ -1346,8 +1346,8 @@ export default function ChatPage() {
       <ChatTemplates
         isOpen={templatesOpen}
         onClose={() => setTemplatesOpen(false)}
-        onSelect={(template) => {
-          setInput(template.initialMessage[lang]);
+        onSelect={(template, examplePrompt) => {
+          setInput(examplePrompt || template.initialMessage[lang]);
           setImageGenMode(false);
         }}
         lang={lang}
