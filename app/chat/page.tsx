@@ -10,6 +10,8 @@ import { IMAGE_PROVIDERS, type ImageProvider } from "@/lib/image-gen";
 import { startRecording, stopRecording } from "@/lib/voice-utils";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme-context";
+import ImageGallery from "@/app/components/ImageGallery";
+import UsageDashboard from "@/app/components/UsageDashboard";
 
 interface Conversation {
   id: string;
@@ -47,6 +49,8 @@ export default function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [lang, setLangState] = useState<Lang>(getLang());
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [usageOpen, setUsageOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{
     message_id: string;
@@ -817,6 +821,22 @@ export default function ChatPage() {
           </div>
         )}
 
+        {/* Quick actions */}
+        <div className="px-3 pb-2 flex gap-2">
+          <button
+            onClick={() => setGalleryOpen(true)}
+            className="flex-1 rounded-lg bg-input-bg hover:bg-surface-hover border border-border-theme py-2 text-sm transition-colors flex items-center justify-center gap-1"
+          >
+            🖼️
+          </button>
+          <button
+            onClick={() => setUsageOpen(true)}
+            className="flex-1 rounded-lg bg-input-bg hover:bg-surface-hover border border-border-theme py-2 text-sm transition-colors flex items-center justify-center gap-1"
+          >
+            📊
+          </button>
+        </div>
+
         {/* New conversation button */}
         <div className="p-3">
           <button
@@ -1083,6 +1103,12 @@ export default function ChatPage() {
           </div>
         )}
       </main>
+
+      {/* Image Gallery Modal */}
+      <ImageGallery isOpen={galleryOpen} onClose={() => setGalleryOpen(false)} />
+
+      {/* Usage Dashboard Modal */}
+      <UsageDashboard isOpen={usageOpen} onClose={() => setUsageOpen(false)} lang={lang} />
     </div>
   );
 }
