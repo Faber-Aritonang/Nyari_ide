@@ -3,8 +3,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { AVAILABLE_MODELS, DEFAULT_MODEL, CHAT_CONFIG, SYSTEM_PROMPT } from "@/lib/groq";
+import { AVAILABLE_MODELS, DEFAULT_MODEL, CHAT_CONFIG } from "@/lib/groq";
 import { logger } from "@/lib/logger";
+import { getPersona, DEFAULT_PERSONA, type PersonaId } from "@/lib/personas";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Parse body request
-    const { conversationId, message, model, imageUrl, fileContext } = await request.json();
+    const { conversationId, message, model, imageUrl, fileContext, persona } = await request.json();
 
     if (!conversationId || !message?.trim()) {
       return NextResponse.json(
@@ -95,7 +96,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Gabungkan system prompt dengan custom instructions dan RAG context
-    let finalSystemPrompt = SYSTEM_PROMPT;
+    const selectedPersona = getPersona((persona as PersonaId) || DEFAULT_PERSONA);
+    let finalSystemPrompt = selectedPersona.systemPrompt;
     
     if (customInstructions) {
       finalSystemPrompt += `\n\n[Instruksi kustom dari user]:\n${customInstructions}`;

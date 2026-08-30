@@ -103,6 +103,8 @@ const strings = {
     enableNotification: "Aktifkan notifikasi",
     notificationEnabled: "Notifikasi aktif",
     notificationDenied: "Notifikasi diblokir oleh browser",
+    selectPersona: "Pilih Persona AI",
+    personaDescription: "Ganti gaya respons AI sesuai kebutuhan",
 
     // Errors
     networkError: "Terjadi kesalahan jaringan. Coba lagi.",
@@ -209,6 +211,8 @@ const strings = {
     enableNotification: "Enable notifications",
     notificationEnabled: "Notifications active",
     notificationDenied: "Notifications blocked by browser",
+    selectPersona: "Select AI Persona",
+    personaDescription: "Change AI response style to fit your needs",
 
     // Errors
     networkError: "Network error. Please try again.",

@@ -17,7 +17,10 @@ import ImageGallery from "@/app/components/ImageGallery";
 import UsageDashboard from "@/app/components/UsageDashboard";
 import PromptLibrary from "@/app/components/PromptLibrary";
 import ChatTemplates from "@/app/components/ChatTemplates";
+import PersonaSwitcher from "@/app/components/PersonaSwitcher";
 import { type ChatTemplate } from "@/lib/chat-templates";
+import { type PersonaId, DEFAULT_PERSONA, getPersona } from "@/lib/personas";
+import { autoCacheConversation, getCachedConversation, isOnline } from "@/lib/offline-cache";
 
 interface Conversation {
   id: string;
@@ -59,6 +62,8 @@ export default function ChatPage() {
   const [usageOpen, setUsageOpen] = useState(false);
   const [promptsOpen, setPromptsOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [selectedPersona, setSelectedPersona] = useState<PersonaId>(DEFAULT_PERSONA);
+  const [isOffline, setIsOffline] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{
     message_id: string;
@@ -124,9 +129,18 @@ export default function ChatPage() {
         if (res.ok) {
           const msgs = await res.json();
           setMessages(msgs);
+          // Cache for offline access
+          const conv = conversations.find((c) => c.id === activeConvId);
+          if (conv) autoCacheConversation(conv, msgs);
         }
       } catch {
-        // ignore
+        // Offline: try to load from cache
+        if (!isOnline()) {
+          const cached = await getCachedConversation(activeConvId!);
+          if (cached) {
+            setMessages(cached.messages);
+          }
+        }
       }
       setLoadingHistory(false);
     }
@@ -138,6 +152,14 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Auto-cache conversation for offline access
+  useEffect(() => {
+    if (messages.length > 0 && activeConvId) {
+      const conv = conversations.find((c) => c.id === activeConvId);
+      if (conv) autoCacheConversation(conv, messages);
+    }
+  }, [messages, activeConvId, conversations]);
+
   // Request notification permission on mount
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -145,6 +167,22 @@ export default function ChatPage() {
         Notification.requestPermission();
       }
     }
+  }, []);
+
+  // Track online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    setIsOffline(!navigator.onLine);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
 
   // Auto-resize textarea
@@ -654,6 +692,7 @@ export default function ChatPage() {
           model: selectedModel,
           imageUrl: imageToSend,
           fileContext: fileToSend?.content,
+          persona: selectedPersona,
         }),
       });
 
@@ -1042,6 +1081,13 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-background text-foreground">
+      {/* Offline indicator */}
+      {isOffline && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-600 text-white text-center py-1 text-xs">
+          📡 Mode Offline — Menampilkan percakapan yang di-cache
+        </div>
+      )}
+
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -1367,6 +1413,14 @@ export default function ChatPage() {
                     </span>
                   </div>
                 )}
+
+                {/* Persona selector */}
+                <div className="mb-2 md:mb-3">
+                  <PersonaSwitcher
+                    selectedPersona={selectedPersona}
+                    onSelect={setSelectedPersona}
+                  />
+                </div>
 
                 {/* Image preview */}
                 {selectedImage && (

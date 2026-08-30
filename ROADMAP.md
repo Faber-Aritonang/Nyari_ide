@@ -186,6 +186,12 @@
 - [x] Message Reactions UI — 👍/👎 reaction pada jawaban AI
 - [x] Notification System — notifikasi browser saat AI selesai merespons
 
+## v2.7 — AI Persona & Offline Mode ✅
+- [x] AI Persona Switcher — 6 persona: Default, Coding, Creative, Business, Indonesian, Minimalis
+- [x] Offline Mode — IndexedDB cache untuk akses percakapan tanpa internet
+- [x] Offline indicator — banner kuning saat offline
+- [x] Auto-cache — percakapan otomatis di-cache saat online
+
 ## Masa Depan (backlog)
 - [ ] Multi-language TTS (bahasa lain selain EN + AR)
 - [ ] Error boundaries di UI
