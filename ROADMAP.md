@@ -98,7 +98,7 @@
 - [x] Toggle bahasa ID/EN (lib/i18n.ts, persist localStorage)
 - [x] Responsive mobile (hamburger menu, overlay sidebar)
 - [x] Manajemen whitelist (admin page: /admin — tambah/hapus email)
-- [x] Text-to-image generation (Pollinations.ai — GPT Image 2)
+- [x] Text-to-image generation (Cloudflare FLUX + Pollinations.ai)
 - [x] Voice selector untuk TTS (pilih suara dari dropdown)
 - [x] Error handling & loading states
 ### Milestone 4.1 — TTS (Text-to-Speech)
@@ -140,6 +140,35 @@
 - [x] Update PROJECT_CONTEXT.md
 ✅ MILESTONE 5: v1.0 rilis! ✅
 
+## v2.0 — Custom Instructions ✅
+- [x] Custom instructions per user (lib/groq.ts)
+- [x] Settings page (/settings)
+- [x] API route GET/POST /api/settings/instructions
+
+## v2.1 — RAG Hybrid ✅
+- [x] pgvector + embeddings untuk Q&A dokumen spesifik
+- [x] Document upload (TXT/MD) — /rag/documents
+- [x] Hybrid search: semantic + text fallback
+- [x] Auto-indexing: dokument + percakapan
+
+## v2.2 — Image Generation Overhaul ✅
+- [x] Cloudflare Workers AI (FLUX.1 schnell) — gratis 10K neurons/day
+- [x] Pollinations.ai sebagai fallback (gratis, unlimited)
+- [x] Hapus Gemini (rate limit) & FLUX fal.ai (paid)
+- [x] Server-side API route (/api/image-gen)
+
+## v2.3 — Performance Optimization ✅
+- [x] Image Gallery — galeri semua gambar yang di-generate AI
+- [x] Usage Dashboard — statistik penggunaan (pesan, gambar, dokumen)
+- [x] SSE streaming dedup — hapus ~60 baris kode duplikat
+- [x] N+1 query fix — 1 query vs 5 query di usage route
+- [x] Parallel fetch — conversations + models di-load bersamaan
+- [x] Production-safe logger (lib/logger.ts)
+- [x] Console cleanup — semua 38 console.error/log diganti ke logger
+
 ## Masa Depan (backlog)
-- RAG: pgvector + embedding HF untuk Q&A dokumen spesifik
-- Regenerasi jawaban, edit pesan
+- [ ] Multi-language TTS (bahasa lain selain EN + AR)
+- [ ] Prompt templates untuk image generation
+- [ ] Image history & favorites
+- [ ] Error boundaries di UI
+- [ ] Rate limiting per user
