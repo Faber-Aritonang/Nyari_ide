@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import ChatMessage, { type Message } from "@/app/components/ChatMessage";
 import { compressImage } from "@/lib/image-utils";
 import { readTextFile, extractPdfText } from "@/lib/file-utils";
-import { generateImageUrl, generateImageHybrid, IMAGE_PROVIDERS, type ImageProvider } from "@/lib/image-gen";
+import { IMAGE_PROVIDERS, type ImageProvider } from "@/lib/image-gen";
 import { startRecording, stopRecording } from "@/lib/voice-utils";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme-context";
@@ -291,50 +291,34 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, { role: "assistant", content: `🎨 Generating with ${imageProvider}...` }]);
 
     try {
-      // Use hybrid generation
-      const result = await generateImageHybrid(prompt, {
-        provider: imageProvider,
-        size: "1024",
+      // Call server-side API route (API keys are server-only env vars)
+      const res = await fetch("/api/image-gen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          provider: imageProvider,
+          size: "1024",
+        }),
       });
 
-      if (result.success && result.url) {
-        // For data URLs (Gemini), use directly
-        // For external URLs (Pollinations/FLUX), verify load
-        if (result.url.startsWith("data:")) {
-          setMessages((prev) => {
-            const updated = [...prev];
-            const lastIdx = updated.length - 1;
-            updated[lastIdx] = {
-              role: "assistant",
-              content: `🎨 Generated with ${result.provider}\nPrompt: "${prompt}"`,
-              generated_image_url: result.url,
-            };
-            return updated;
-          });
-        } else {
-          // Verify image loads (Pollinations/FLUX)
-          const img = new Image();
-          img.src = result.url;
-          await new Promise<void>((resolve, reject) => {
-            img.onload = () => resolve();
-            img.onerror = () => reject(new Error("Failed to load image"));
-            setTimeout(() => reject(new Error("Timeout")), 60000);
-          });
+      const data = await res.json();
 
-          setMessages((prev) => {
-            const updated = [...prev];
-            const lastIdx = updated.length - 1;
-            updated[lastIdx] = {
-              role: "assistant",
-              content: `🎨 Generated with ${result.provider}\nPrompt: "${prompt}"`,
-              generated_image_url: result.url,
-            };
-            return updated;
-          });
-        }
-      } else {
-        throw new Error(result.error || "Generation failed");
+      if (!res.ok || !data.success || !data.url) {
+        throw new Error(data.error || "Image generation failed");
       }
+
+      // Set image directly — server already verified generation succeeded
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastIdx = updated.length - 1;
+        updated[lastIdx] = {
+          role: "assistant",
+          content: `🎨 Generated with ${data.provider}\nPrompt: "${prompt}"`,
+          generated_image_url: data.url,
+        };
+        return updated;
+      });
     } catch (err) {
       setMessages((prev) => {
         const updated = [...prev];

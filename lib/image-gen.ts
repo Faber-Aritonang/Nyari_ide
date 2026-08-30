@@ -34,7 +34,7 @@ export function generateImageUrl(
   seed?: number
 ): string {
   const encoded = encodeURIComponent(prompt);
-  let url = `${POLLINATIONS_BASE}/${encoded}?width=${size}&height=${size}&model=gpt-image-2&nologo=true`;
+  let url = `${POLLINATIONS_BASE}/${encoded}?width=${size}&height=${size}&model=flux`;
   if (seed !== undefined) {
     url += `&seed=${seed}`;
   }

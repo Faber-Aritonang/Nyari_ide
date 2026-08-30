@@ -146,24 +146,13 @@ async function generateWithPollinations(
 ): Promise<ImageGenerationResult> {
   try {
     const encoded = encodeURIComponent(prompt);
-    let url = `https://image.pollinations.ai/prompt/${encoded}?width=${size}&height=${size}&model=gpt-image-2&nologo=true`;
+    let url = `https://image.pollinations.ai/prompt/${encoded}?width=${size}&height=${size}&model=flux`;
 
     if (seed !== undefined) {
       url += `&seed=${seed}`;
     }
 
-    // Test if image loads
-    const response = await fetch(url, { method: "HEAD" });
-
-    if (!response.ok) {
-      return {
-        url: "",
-        provider: "pollinations",
-        success: false,
-        error: `Pollinations error: ${response.status}`,
-      };
-    }
-
+    // Return URL directly - image loading is verified by the caller
     return {
       url,
       provider: "pollinations",
