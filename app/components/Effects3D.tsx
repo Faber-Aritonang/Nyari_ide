@@ -27,6 +27,40 @@ export function AuroraBackground({ grid = true }: { grid?: boolean }) {
 }
 
 /* ============================================================
+   HERO BACKDROP — global subtle image background layer.
+   Renders nothing if /images/bg-hero.webp is not present.
+   ============================================================ */
+
+let heroImageChecked = false;
+let heroImageExists = false;
+
+export function HeroBackdrop() {
+  const [available, setAvailable] = useState<boolean | null>(
+    heroImageChecked ? heroImageExists : null
+  );
+
+  useEffect(() => {
+    if (heroImageChecked) return;
+    const img = new Image();
+    img.onload = () => {
+      heroImageExists = true;
+      heroImageChecked = true;
+      setAvailable(true);
+    };
+    img.onerror = () => {
+      heroImageExists = false;
+      heroImageChecked = true;
+      setAvailable(false);
+    };
+    img.src = "/images/bg-hero.webp";
+  }, []);
+
+  if (available === null) return null; // avoid flash while probing
+  if (!available) return null; // image not added yet
+  return <div className="bg-hero-image" aria-hidden="true" />;
+}
+
+/* ============================================================
    PARTICLES — lightweight CSS-animated floating dots
    ============================================================ */
 
