@@ -1081,7 +1081,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background text-foreground relative">
+    <div className="flex h-screen text-foreground relative">
       <AuroraBackground grid={true} />
 
       {/* Offline indicator */}
