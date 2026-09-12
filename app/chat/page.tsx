@@ -21,6 +21,7 @@ import PersonaSwitcher from "@/app/components/PersonaSwitcher";
 import { type ChatTemplate } from "@/lib/chat-templates";
 import { type PersonaId, DEFAULT_PERSONA, getPersona } from "@/lib/personas";
 import { autoCacheConversation, getCachedConversation, isOnline } from "@/lib/offline-cache";
+import { AuroraBackground, HoloCube, TypingIndicator } from "@/app/components/Effects3D";
 
 interface Conversation {
   id: string;
@@ -1080,7 +1081,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
+    <div className="flex h-screen bg-background text-foreground relative">
+      <AuroraBackground grid={true} />
+
       {/* Offline indicator */}
       {isOffline && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-600 text-white text-center py-1 text-xs">
@@ -1098,14 +1101,17 @@ export default function ChatPage() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-sidebar-bg border-r border-border-theme flex flex-col transition-transform duration-200 ${
+        className={`fixed md:static inset-y-0 left-0 z-50 w-64 glass border-r border-border-theme flex flex-col transition-transform duration-300 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
         {/* Header */}
         <div className="p-4 border-b border-border-theme">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-bold">🧠 {t("appName")}</h1>
+            <h1 className="text-lg font-bold tracking-tight flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg btn-neon text-base shadow-lg">🧠</span>
+              <span className="neon-text">{t("appName")}</span>
+            </h1>
             <div className="flex items-center gap-1">
               <button
                 onClick={toggleTheme}
@@ -1135,7 +1141,7 @@ export default function ChatPage() {
                 handleSearch(e.target.value);
               }}
               placeholder={lang === "id" ? "Cari pesan..." : "Search messages..."}
-              className="w-full bg-input-bg border border-border-theme rounded-lg px-3 py-2 text-sm pl-8 focus:outline-none focus:border-blue-500 placeholder:text-muted"
+              className="input-neon w-full rounded-lg px-3 py-2 text-sm pl-8 placeholder:text-muted"
             />
             <span className="absolute left-2.5 top-2.5 text-muted text-sm">🔍</span>
             {searchQuery && (
@@ -1214,7 +1220,7 @@ export default function ChatPage() {
         <div className="p-3">
           <button
             onClick={createConversation}
-            className="w-full rounded-lg bg-blue-600 hover:bg-blue-500 py-2.5 text-sm font-medium transition-colors"
+            className="btn-neon w-full rounded-lg py-2.5 text-sm font-semibold tracking-wide"
           >
             + {t("newConversation")}
           </button>
@@ -1225,10 +1231,10 @@ export default function ChatPage() {
           {conversations.map((conv) => (
             <div
               key={conv.id}
-              className={`group flex items-center justify-between rounded-lg px-3 py-2 mb-1 cursor-pointer transition-colors ${
+              className={`group flex items-center justify-between rounded-lg px-3 py-2 mb-1 cursor-pointer transition-all duration-200 border border-transparent ${
                 activeConvId === conv.id
-                  ? "bg-input-bg text-foreground"
-                  : "hover:bg-surface-hover text-muted"
+                  ? "glass-subtle text-foreground border-[color:var(--neon-glow)] shadow-[0_0_12px_var(--neon-glow)]"
+                  : "hover:bg-surface-hover text-muted hover:border-border-theme hover:translate-x-0.5"
               }`}
               onClick={() => selectConversation(conv.id)}
             >
@@ -1365,14 +1371,20 @@ export default function ChatPage() {
                 )}
 
                 {messages.length === 0 && !loadingHistory && (
-                  <div className="text-center text-muted mt-10 md:mt-20">
-                    <p className="text-3xl md:text-4xl mb-4">🧠💡</p>
-                    <p className="text-base md:text-lg font-medium mb-2">
+                  <div className="text-center text-muted mt-10 md:mt-20 animate-fade-up">
+                    <div className="flex justify-center mb-6">
+                      <HoloCube size={88} />
+                    </div>
+                    <p className="text-2xl md:text-3xl font-bold mb-3 neon-text">
                       {t("appName")}
                     </p>
-                    <p className="text-sm">
+                    <p className="text-sm md:text-base max-w-md mx-auto">
                       {t("startChatting")}
                     </p>
+                    <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-lighter">
+                      <span className="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[var(--neon-1)] to-[var(--neon-3)]" />
+                      {lang === "id" ? "AI siap membantu" : "AI ready to help"}
+                    </div>
                   </div>
                 )}
 
@@ -1393,7 +1405,7 @@ export default function ChatPage() {
             </div>
 
             {/* Input area */}
-            <div className="border-t border-border-theme p-3 md:p-4">
+            <div className="glass-strong border-t border-border-theme p-3 md:p-4">
               <div className="max-w-3xl mx-auto">
                 {/* Model selector */}
                 {models.length > 1 && (
@@ -1402,7 +1414,7 @@ export default function ChatPage() {
                     <select
                       value={selectedModel}
                       onChange={(e) => setSelectedModel(e.target.value)}
-                      className="bg-input-bg border border-border-theme rounded-lg px-2 md:px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-blue-500"
+                      className="input-neon rounded-lg px-2 md:px-3 py-1.5 text-xs text-foreground cursor-pointer"
                     >
                       {models.map((m) => (
                         <option key={m.id} value={m.id}>{m.label}</option>
@@ -1456,7 +1468,7 @@ export default function ChatPage() {
                     <div className="relative">
                       <button
                         onClick={() => { setImageGenMode(!imageGenMode); setSelectedImage(null); setSelectedFile(null); }}
-                        className={`rounded-xl border px-2.5 md:px-3 py-2.5 md:py-3 text-sm transition-colors ${imageGenMode ? "bg-purple-600 border-purple-500 text-white" : "bg-input-bg hover:bg-surface-hover border-border-theme"}`}
+                        className={`rounded-xl border px-2.5 md:px-3 py-2.5 md:py-3 text-sm transition-all ${imageGenMode ? "bg-[color:var(--neon-1)] border-[color:var(--neon-3)] text-white shadow-[0_0_16px_var(--neon-glow)]" : "bg-input-bg hover:bg-surface-hover border-border-theme"}`}
                         title={t("imageGenMode")}
                       >🎨</button>
                       {imageGenMode && (
@@ -1487,15 +1499,19 @@ export default function ChatPage() {
                     onKeyDown={handleKeyDown}
                     placeholder={imageGenMode ? t("typeImagePrompt") : t("typeMessage")}
                     rows={1}
-                    className="flex-1 bg-input-bg border border-border-theme rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-sm resize-none focus:outline-none focus:border-blue-500 placeholder:text-muted min-h-[42px]"
+                    className="input-neon flex-1 rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-sm resize-none placeholder:text-muted min-h-[42px]"
                   />
 
                   <button
                     onClick={sendMessage}
                     disabled={sending || !input.trim()}
-                    className={`rounded-xl disabled:opacity-50 px-3 md:px-4 py-2.5 md:py-3 text-sm font-medium transition-colors flex-shrink-0 ${imageGenMode ? "bg-purple-600 hover:bg-purple-500" : "bg-blue-600 hover:bg-blue-500"}`}
+                    className={`rounded-xl disabled:opacity-50 disabled:cursor-not-allowed px-3 md:px-5 py-2.5 md:py-3 text-sm font-semibold tracking-wide flex-shrink-0 ${
+                      imageGenMode
+                        ? "bg-gradient-to-r from-[var(--neon-2)] to-[var(--neon-1)] hover:brightness-110 shadow-[0_0_16px_var(--neon-glow)] transition-all"
+                        : "btn-neon"
+                    }`}
                   >
-                    {sending ? "..." : imageGenMode ? t("generate") : t("send")}
+                    {sending ? <TypingIndicator /> : imageGenMode ? t("generate") : t("send")}
                   </button>
                 </div>
               </div>
@@ -1503,13 +1519,15 @@ export default function ChatPage() {
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center p-4">
-            <div className="text-center text-muted">
-              <p className="text-3xl md:text-4xl mb-4">🧠💡</p>
-              <p className="text-base md:text-lg font-medium mb-2">{t("appName")}</p>
+            <div className="text-center text-muted animate-fade-up">
+              <div className="flex justify-center mb-6">
+                <HoloCube size={96} />
+              </div>
+              <p className="text-2xl md:text-3xl font-bold mb-3 neon-text">{t("appName")}</p>
               <p className="text-sm mb-6">{t("selectOrCreate")}</p>
               <button
                 onClick={createConversation}
-                className="rounded-lg bg-blue-600 hover:bg-blue-500 px-6 py-2.5 text-sm font-medium transition-colors"
+                className="btn-neon rounded-xl px-8 py-3 text-sm font-semibold tracking-wide"
               >
                 + {t("newConversation")}
               </button>

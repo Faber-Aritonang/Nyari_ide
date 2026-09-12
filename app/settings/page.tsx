@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
+import { AuroraBackground } from "@/app/components/Effects3D";
 
 export default function SettingsPage() {
   const [instructions, setInstructions] = useState("");
@@ -73,29 +74,29 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-gray-500">{t("loadingHistory")}</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted animate-fade-in">{t("loadingHistory")}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen relative">
+      <AuroraBackground />
+
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow">
+      <header className="glass-strong sticky top-0 z-40">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <button
             onClick={() => router.push("/chat")}
-            className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+            className="text-muted hover:text-foreground transition-colors"
           >
             ← {t("appName")}
           </button>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {t("settings")}
-          </h1>
+          <h1 className="text-lg font-semibold neon-text">{t("settings")}</h1>
           <button
             onClick={toggleLang}
-            className="text-sm px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+            className="btn-glass text-sm px-3 py-1.5 rounded-lg"
           >
             {lang === "id" ? "EN" : "ID"}
           </button>
@@ -103,12 +104,12 @@ export default function SettingsPage() {
       </header>
 
       {/* Content */}
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+      <main className="max-w-2xl mx-auto px-4 py-8 relative z-10">
+        <div className="glass-panel rounded-2xl p-6 animate-fade-up">
+          <h2 className="text-xl font-bold mb-2">
             {t("customInstructions")}
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+          <p className="text-muted text-sm mb-4">
             {t("customInstructionsDesc")}
           </p>
 
@@ -118,25 +119,22 @@ export default function SettingsPage() {
             placeholder={t("customInstructionsPlaceholder")}
             maxLength={2000}
             rows={8}
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                       placeholder-gray-400 dark:placeholder-gray-500
-                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="input-neon w-full p-3 rounded-xl resize-none text-sm placeholder:text-muted"
           />
 
           <div className="flex items-center justify-between mt-3">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-xs text-muted-lighter">
               {instructions.length}/2000 {t("maxChars")}
             </span>
 
             <button
               onClick={handleSave}
               disabled={saving}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors
+              className={`px-5 py-2 rounded-xl text-sm font-semibold tracking-wide transition-all
                 ${
                   saved
-                    ? "bg-green-500 text-white"
-                    : "bg-blue-500 hover:bg-blue-600 text-white"
+                    ? "bg-green-500 text-white shadow-[0_0_16px_rgba(34,197,94,0.4)]"
+                    : "btn-neon"
                 }
                 ${saving ? "opacity-50 cursor-not-allowed" : ""}`}
             >
@@ -147,14 +145,14 @@ export default function SettingsPage() {
 
         {/* Preview */}
         {instructions && (
-          <div className="mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="mt-6 glass rounded-2xl p-4 animate-fade-up">
+            <h3 className="text-sm font-medium text-muted-light mb-2">
               Preview (System Prompt)
             </h3>
-            <div className="text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600 whitespace-pre-wrap">
+            <div className="text-xs text-muted bg-background/60 p-3 rounded-xl border border-border-theme whitespace-pre-wrap">
               Kamu adalah Nyari_ide, asisten AI yang membantu dalam Bahasa Indonesia maupun English.
               {"\n\n"}
-              <strong>instruksi kustom:</strong>
+              <strong className="neon-text">instruksi kustom:</strong>
               {"\n"}
               {instructions}
               {"\n\n"}

@@ -157,8 +157,30 @@ export default function ChatMessage({ message, messageId, onRetry, onEdit, onRea
   }, [speaking, message.content, voice]);
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4 group/msg`}>
-      <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${isUser ? "bg-blue-600 text-white" : "bg-surface text-foreground border border-border-theme"}`}>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4 group/msg animate-fade-up`}>
+      {/* Avatar */}
+      {!isUser && (
+        <div className="mr-3 mt-1 shrink-0 scene-3d">
+          <div className="w-9 h-9 rounded-xl btn-neon flex items-center justify-center text-base shadow-lg">
+            🧠
+          </div>
+        </div>
+      )}
+      <div
+        className={`relative max-w-[80%] rounded-2xl px-4 py-3 overflow-hidden ${
+          isUser
+            ? "bubble-user text-white shadow-[0_4px_20px_var(--neon-glow)]"
+            : "glass-panel rounded-2xl"
+        }`}
+      >
+        {/* Glass sheen sweep on hover */}
+        <span className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover/msg:opacity-100 transition-opacity duration-500 bg-[radial-gradient(240px_circle_at_var(--shine-x,70%)_var(--shine-y,0%),rgba(255,255,255,0.12),transparent_65%)]" />
+        {isUser && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-40 mix-blend-overlay bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.35)_50%,transparent_70%)]"
+          />
+        )}
         {message.image_url && (
           <div className="mb-2">
             <img src={message.image_url} alt="Uploaded image" className="rounded-lg max-w-full max-h-64 object-cover" />

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { AuroraBackground } from "@/app/components/Effects3D";
 
 interface WhitelistEntry {
   id: string;
@@ -119,8 +120,8 @@ export default function AdminPage() {
 
   if (checking) {
     return (
-      <main className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <p className="text-muted">Memeriksa akses...</p>
+      <main className="min-h-screen text-foreground flex items-center justify-center">
+        <p className="text-muted animate-fade-in">Memeriksa akses...</p>
       </main>
     );
   }
@@ -128,12 +129,14 @@ export default function AdminPage() {
   if (!isAdmin) return null;
 
   return (
-    <main className="min-h-screen bg-background text-foreground p-4 md:p-8">
-      <div className="max-w-2xl mx-auto">
+    <main className="min-h-screen text-foreground p-4 md:p-8 relative">
+      <AuroraBackground />
+
+      <div className="max-w-2xl mx-auto relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 animate-fade-up">
           <div>
-            <h1 className="text-2xl font-bold">⚙️ Admin — Whitelist</h1>
+            <h1 className="text-2xl font-bold neon-text">⚙️ Admin — Whitelist</h1>
             <p className="text-sm text-muted mt-1">
               Kelola email yang boleh mendaftar ({emails.length}/10 akun)
             </p>
@@ -154,12 +157,12 @@ export default function AdminPage() {
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             placeholder="email@contoh.com"
-            className="flex-1 bg-input-bg border border-border-theme rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+            className="input-neon flex-1 rounded-xl px-4 py-2.5 text-sm placeholder:text-muted"
           />
           <button
             type="submit"
             disabled={adding || emails.length >= 10}
-            className="rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-5 py-2.5 text-sm font-medium transition-colors"
+            className="btn-neon rounded-xl px-5 py-2.5 text-sm font-semibold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {adding ? "..." : "+ Tambah"}
           </button>
@@ -178,7 +181,7 @@ export default function AdminPage() {
         )}
 
         {/* Email list */}
-        <div className="bg-surface border border-border-theme rounded-2xl overflow-hidden">
+        <div className="glass-panel rounded-2xl overflow-hidden animate-fade-up stagger-2">
           {loading ? (
             <div className="p-8 text-center text-muted">Memuat...</div>
           ) : emails.length === 0 ? (
@@ -195,11 +198,11 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {emails.map((entry) => (
-                  <tr key={entry.id} className="border-b border-border-theme/50 hover:bg-surface-hover/30">
+                  <tr key={entry.id} className="border-b border-border-theme/50 hover:bg-surface-hover/30 transition-colors">
                     <td className="px-4 py-3 text-sm">
                       {entry.email}
                       {entry.email === userEmail && (
-                        <span className="ml-2 text-xs text-blue-400">(you)</span>
+                        <span className="ml-2 text-xs text-[color:var(--neon-2)]">(you)</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-muted hidden sm:table-cell">

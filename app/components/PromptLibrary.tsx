@@ -123,7 +123,7 @@ export default function PromptLibrary({ isOpen, onClose, onSelect, lang }: Promp
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowForm(!showForm)}
-              className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm btn-neon rounded-lg"
             >
               + {lang === "id" ? "Tambah" : "Add"}
             </button>
@@ -141,7 +141,7 @@ export default function PromptLibrary({ isOpen, onClose, onSelect, lang }: Promp
           <button
             onClick={() => setFilter("all")}
             className={`px-3 py-1 text-xs rounded-full transition-colors ${
-              filter === "all" ? "bg-blue-600 text-white" : "bg-muted hover:bg-surface-hover"
+              filter === "all" ? "btn-neon" : "bg-muted hover:bg-surface-hover"
             }`}
           >
             {lang === "id" ? "Semua" : "All"}
@@ -151,7 +151,7 @@ export default function PromptLibrary({ isOpen, onClose, onSelect, lang }: Promp
               key={cat.value}
               onClick={() => setFilter(cat.value)}
               className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                filter === cat.value ? "bg-blue-600 text-white" : "bg-muted hover:bg-surface-hover"
+                filter === cat.value ? "btn-neon" : "bg-muted hover:bg-surface-hover"
               }`}
             >
               {cat.label[lang]}
@@ -168,7 +168,7 @@ export default function PromptLibrary({ isOpen, onClose, onSelect, lang }: Promp
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={lang === "id" ? "Judul prompt..." : "Prompt title..."}
-                className="flex-1 bg-input-bg border border-border-theme rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                className="input-neon flex-1 rounded-lg px-3 py-2 text-sm"
               />
               <select
                 value={category}
@@ -186,8 +186,7 @@ export default function PromptLibrary({ isOpen, onClose, onSelect, lang }: Promp
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder={lang === "id" ? "Isi prompt..." : "Prompt content..."}
-              rows={3}
-              className="w-full bg-input-bg border border-border-theme rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-blue-500"
+              rows={3}                className="input-neon w-full rounded-lg px-3 py-2 text-sm resize-none"
             />
             <div className="flex justify-end gap-2 mt-2">
               <button
@@ -199,7 +198,7 @@ export default function PromptLibrary({ isOpen, onClose, onSelect, lang }: Promp
               <button
                 onClick={handleSave}
                 disabled={!title.trim() || !content.trim()}
-                className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 text-sm btn-neon rounded-lg disabled:opacity-50"
               >
                 {lang === "id" ? "Simpan" : "Save"}
               </button>
@@ -238,7 +237,7 @@ export default function PromptLibrary({ isOpen, onClose, onSelect, lang }: Promp
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => handleSelect(prompt.content)}
-                        className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-500 rounded transition-colors"
+                        className="px-2 py-1 text-xs btn-neon rounded"
                         title={lang === "id" ? "Gunakan prompt" : "Use prompt"}
                       >
                         →

@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
+import { AuroraBackground } from "@/app/components/Effects3D";
 import { getLang, setLang, type Lang } from "@/lib/i18n";
 
 interface Message {
@@ -57,23 +58,24 @@ export default function SharedPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-gray-500">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted animate-fade-in">Loading...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+      <div className="min-h-screen flex items-center justify-center relative">
+        <AuroraBackground />
+        <div className="text-center relative z-10 glass-panel rounded-2xl p-8 animate-fade-up">
+          <h1 className="text-2xl font-bold neon-text mb-2">
             {lang === "id" ? "Tidak Dapat Diakses" : "Not Available"}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">{error}</p>
+          <p className="text-muted">{error}</p>
           <a
             href="/"
-            className="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            className="btn-neon mt-4 inline-block px-5 py-2 rounded-xl text-sm font-semibold"
           >
             {lang === "id" ? "Kembali ke Beranda" : "Back to Home"}
           </a>
@@ -83,15 +85,17 @@ export default function SharedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen relative">
+      <AuroraBackground />
+
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow">
+      <header className="glass-strong sticky top-0 z-40">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h1 className="text-lg font-semibold neon-text">
               {data?.title || "Shared Conversation"}
             </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-muted">
               {data?.created_at
                 ? new Date(data.created_at).toLocaleDateString(
                     lang === "id" ? "id-ID" : "en-US",
@@ -102,7 +106,7 @@ export default function SharedPage() {
           </div>
           <button
             onClick={toggleLang}
-            className="text-sm px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+            className="btn-glass text-sm px-3 py-1.5 rounded-lg"
           >
             {lang === "id" ? "EN" : "ID"}
           </button>
@@ -120,10 +124,10 @@ export default function SharedPage() {
               }`}
             >
               <div
-                className={`max-w-[85%] rounded-lg px-4 py-3 ${
+                className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                   msg.role === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700"
+                    ? "bubble-user text-white shadow-[0_4px_20px_var(--neon-glow)]"
+                    : "glass-panel"
                 }`}
               >
                 {msg.role === "assistant" ? (
@@ -146,13 +150,16 @@ export default function SharedPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-8 text-center text-sm text-muted relative z-10">
           <p>
             {lang === "id"
               ? "Dibagikan dari Nyari_ide"
               : "Shared from Nyari_ide"}
           </p>
-          <a href="/" className="text-blue-500 hover:underline">
+          <a
+            href="/"
+            className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-1)] to-[var(--neon-3)] font-medium hover:opacity-80"
+          >
             {lang === "id" ? "Coba Nyari_ide" : "Try Nyari_ide"}
           </a>
         </div>

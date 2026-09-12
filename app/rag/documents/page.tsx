@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
+import { AuroraBackground } from "@/app/components/Effects3D";
 
 interface Document {
   id: string;
@@ -173,46 +174,48 @@ export default function DocumentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-gray-500">{t("loadingHistory")}</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted animate-fade-in">{t("loadingHistory")}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen relative">
+      <AuroraBackground />
+
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow">
+      <header className="glass-strong sticky top-0 z-40">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <button
             onClick={() => router.push("/chat")}
-            className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+            className="text-muted hover:text-foreground transition-colors"
           >
             ← {t("appName")}
           </button>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h1 className="text-lg font-semibold neon-text">
             📚 {lang === "id" ? "Dokumen RAG" : "RAG Documents"}
           </h1>
           <button
             onClick={toggleLang}
-            className="text-sm px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+            className="btn-glass text-sm px-3 py-1.5 rounded-lg"
           >
             {lang === "id" ? "EN" : "ID"}
           </button>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6">
+      <main className="max-w-3xl mx-auto px-4 py-6 relative z-10">
         {/* Upload Area */}
         <div
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 animate-fade-up ${
             dragActive
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-              : "border-gray-300 dark:border-gray-600"
+              ? "border-[color:var(--neon-1)] bg-[color:var(--neon-glow)] shadow-[0_0_32px_var(--neon-glow)] scale-[1.01]"
+              : "border-border-theme glass-subtle"
           }`}
         >
           <input
@@ -223,8 +226,8 @@ export default function DocumentsPage() {
             className="hidden"
           />
 
-          <div className="text-4xl mb-4">📄</div>
-          <p className="text-gray-700 dark:text-gray-300 mb-2">
+          <div className="text-4xl mb-4 float-3d">📄</div>
+          <p className="text-foreground mb-2">
             {lang === "id"
               ? "Drag & drop file di sini, atau"
               : "Drag & drop file here, or"}
@@ -232,11 +235,11 @@ export default function DocumentsPage() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+            className="btn-neon px-5 py-2 rounded-xl text-sm font-semibold tracking-wide disabled:opacity-50"
           >
             {uploading ? uploadProgress : lang === "id" ? "Pilih File" : "Choose File"}
           </button>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          <p className="text-xs text-muted-lighter mt-2">
             {lang === "id"
               ? "Mendukung: TXT, MD (maks 1MB)"
               : "Supported: TXT, MD (max 1MB)"}
@@ -245,19 +248,19 @@ export default function DocumentsPage() {
 
         {/* Upload Progress */}
         {uploadProgress && uploading && (
-          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-700 dark:text-blue-300 text-sm">
+          <div className="mt-4 p-3 rounded-xl text-sm glass-subtle border-[color:var(--neon-1)] text-[color:var(--neon-3)]">
             {uploadProgress}
           </div>
         )}
 
         {/* Documents List */}
         <div className="mt-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-lg font-semibold mb-4">
             {lang === "id" ? "Dokumen Tersimpan" : "Saved Documents"} ({documents.length})
           </h2>
 
           {documents.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div className="text-center py-8 text-muted">
               <p>{lang === "id" ? "Belum ada dokumen." : "No documents yet."}</p>
               <p className="text-sm mt-1">
                 {lang === "id"
@@ -270,14 +273,12 @@ export default function DocumentsPage() {
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700"
+                  className="glass rounded-xl p-4 hover:shadow-[0_0_20px_var(--neon-glow)] hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900 dark:text-white">
-                        {doc.title}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      <h3 className="font-medium">{doc.title}</h3>
+                      <p className="text-sm text-muted mt-1">
                         {doc.filename} • {doc.chunk_count} chunks •{" "}
                         {new Date(doc.created_at).toLocaleDateString(
                           lang === "id" ? "id-ID" : "en-US"
@@ -286,7 +287,7 @@ export default function DocumentsPage() {
                     </div>
                     <button
                       onClick={() => handleDelete(doc.id)}
-                      className="text-red-500 hover:text-red-700 text-sm"
+                      className="text-red-400 hover:text-red-300 text-sm transition-colors"
                     >
                       🗑️
                     </button>

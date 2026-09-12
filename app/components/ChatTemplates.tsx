@@ -53,8 +53,8 @@ export default function ChatTemplates({ isOpen, onClose, onSelect, lang }: ChatT
         </div>
 
         {/* Technique info banner */}
-        <div className="px-4 py-2 bg-blue-600/10 border-b border-border">
-          <p className="text-xs text-blue-400 font-medium mb-1">
+        <div className="px-4 py-2 bg-[color:var(--neon-glow)]/20 border-b border-border">
+          <p className="text-xs text-[color:var(--neon-2)] font-medium mb-1">
             {lang === "id" ? "🎓 7 Teknik Prompting yang Tersedia:" : "🎓 7 Available Prompting Techniques:"}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -64,7 +64,7 @@ export default function ChatTemplates({ isOpen, onClose, onSelect, lang }: ChatT
                 onClick={() => setTechniqueFilter(techniqueFilter === tech ? null : tech)}
                 className={`px-2 py-0.5 text-xs rounded transition-colors ${
                   techniqueFilter === tech
-                    ? "bg-blue-600 text-white"
+                    ? "btn-neon"
                     : "bg-background hover:bg-surface-hover border border-border"
                 }`}
               >
@@ -89,7 +89,7 @@ export default function ChatTemplates({ isOpen, onClose, onSelect, lang }: ChatT
               key={cat.value}
               onClick={() => setFilter(cat.value)}
               className={`px-3 py-1 text-xs rounded-full transition-colors whitespace-nowrap ${
-                filter === cat.value ? "bg-blue-600 text-white" : "bg-muted hover:bg-surface-hover"
+                filter === cat.value ? "btn-neon" : "bg-muted hover:bg-surface-hover"
               }`}
             >
               {cat.label[lang]}
@@ -120,7 +120,7 @@ export default function ChatTemplates({ isOpen, onClose, onSelect, lang }: ChatT
                       <span className="text-2xl">{template.icon}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-sm group-hover:text-blue-400 transition-colors">
+                          <h3 className="font-medium text-sm group-hover:text-[color:var(--neon-2)] transition-colors">
                             {template.title[lang]}
                           </h3>
                         </div>
@@ -128,7 +128,7 @@ export default function ChatTemplates({ isOpen, onClose, onSelect, lang }: ChatT
                           {template.description[lang]}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs px-2 py-0.5 rounded bg-blue-600/20 text-blue-400">
+                          <span className="text-xs px-2 py-0.5 rounded bg-[color:var(--neon-glow)]/30 text-[color:var(--neon-2)]">
                             {TECHNIQUE_INFO[template.technique].icon} {template.techniqueLabel[lang]}
                           </span>
                         </div>
@@ -153,7 +153,7 @@ export default function ChatTemplates({ isOpen, onClose, onSelect, lang }: ChatT
                               onSelect(template, example[lang]);
                               onClose();
                             }}
-                            className="w-full text-left p-2 text-xs bg-background hover:bg-blue-600/20 hover:border-blue-500 border border-border rounded-lg transition-colors"
+                            className="w-full text-left p-2 text-xs bg-background hover:bg-[color:var(--neon-glow)]/20 hover:border-[color:var(--neon-1)] border border-border rounded-lg transition-colors"
                           >
                             <span className="text-muted-light">→</span>{" "}
                             {example[lang]}
@@ -165,7 +165,7 @@ export default function ChatTemplates({ isOpen, onClose, onSelect, lang }: ChatT
                           onSelect(template);
                           onClose();
                         }}
-                        className="w-full mt-3 p-2 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                        className="w-full mt-3 p-2 text-xs btn-neon rounded-lg"
                       >
                         {lang === "id" ? "Mulai dengan template ini" : "Start with this template"}
                       </button>
