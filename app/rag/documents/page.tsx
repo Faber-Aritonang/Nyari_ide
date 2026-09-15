@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
 import { AuroraBackground } from "@/app/components/Effects3D";
+import { extractPdfText } from "@/lib/file-utils";
 
 interface Document {
   id: string;
@@ -71,9 +72,12 @@ export default function DocumentsPage() {
       return;
     }
 
-    // Validasi ukuran (max 1MB)
-    if (file.size > 1024 * 1024) {
-      alert("Ukuran file maksimal 1MB.");
+    const isPdf = file.type === "application/pdf" || ext === ".pdf";
+
+    // Validasi ukuran (PDF max 10MB, lainnya max 1MB)
+    const maxSize = isPdf ? 10 * 1024 * 1024 : 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(isPdf ? "Ukuran PDF maksimal 10MB." : "Ukuran file maksimal 1MB.");
       return;
     }
 
@@ -83,21 +87,20 @@ export default function DocumentsPage() {
     try {
       // Baca file
       let content = "";
-      if (file.type === "application/pdf") {
-        setUploadProgress("PDF belum didukung untuk RAG. Gunakan TXT atau MD.");
-        setUploading(false);
-        return;
+      if (isPdf) {
+        setUploadProgress("Mengekstrak teks dari PDF (semua halaman)...");
+        content = await extractPdfText(file, "all");
       } else {
         content = await file.text();
       }
 
       if (!content.trim()) {
-        alert("File kosong.");
+        alert("File kosong atau tidak bisa diekstrak.");
         setUploading(false);
         return;
       }
 
-      setUploadProgress("Memproses dan meng-index...");
+      setUploadProgress(`Memproses dan meng-index (${content.length} karakter)...`);
 
       // Upload ke API
       const res = await fetch("/api/rag/documents", {
@@ -123,7 +126,7 @@ export default function DocumentsPage() {
       }
     } catch (err) {
       console.error("Upload error:", err);
-      alert("Gagal upload document.");
+      alert(err instanceof Error ? err.message : "Gagal upload document.");
       setUploadProgress("");
     } finally {
       setUploading(false);
@@ -241,8 +244,8 @@ export default function DocumentsPage() {
           </button>
           <p className="text-xs text-muted-lighter mt-2">
             {lang === "id"
-              ? "Mendukung: TXT, MD (maks 1MB)"
-              : "Supported: TXT, MD (max 1MB)"}
+              ? "Mendukung: TXT, MD, PDF (PDF maks 10MB)"
+              : "Supported: TXT, MD, PDF (PDF max 10MB)"}
           </p>
         </div>
 

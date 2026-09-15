@@ -37,10 +37,14 @@ export function readTextFile(file: File): Promise<string> {
 /**
  * Ekstrak teks dari PDF menggunakan pdf.js (client-side)
  * Hanya mengambil teks, tidak mengirim gambar/gambar dari PDF.
+ * maxPages default 10 (untuk chat), atau "all" untuk RAG.
  */
-export async function extractPdfText(file: File): Promise<string> {
-  if (file.size > 5 * 1024 * 1024) {
-    throw new Error("File PDF terlalu besar. Maksimal 5MB.");
+export async function extractPdfText(
+  file: File,
+  maxPages?: number | "all"
+): Promise<string> {
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error("File PDF terlalu besar. Maksimal 10MB.");
   }
 
   // Dynamic import pdf.js agar tidak memblokir loading page
@@ -54,10 +58,9 @@ export async function extractPdfText(file: File): Promise<string> {
 
   const textParts: string[] = [];
   const totalPages = pdf.numPages;
-  // Batasi max 10 halaman pertama saja (hemat token)
-  const maxPages = Math.min(totalPages, 10);
+  const limit = maxPages === "all" ? totalPages : Math.min(totalPages, maxPages ?? 10);
 
-  for (let i = 1; i <= maxPages; i++) {
+  for (let i = 1; i <= limit; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,12 +75,12 @@ export async function extractPdfText(file: File): Promise<string> {
 
   let result = textParts.join("\n\n");
 
-  if (totalPages > 10) {
-    result += `\n\n... [hanya 10 dari ${totalPages} halaman yang diekstrak]`;
+  if (totalPages > limit) {
+    result += `\n\n... [hanya ${limit} dari ${totalPages} halaman yang diekstrak]`;
   }
 
-  // Truncate jika terlalu panjang
-  if (result.length > MAX_CHARS) {
+  // Truncate hanya untuk mode chat (bukan RAG)
+  if (maxPages !== "all" && result.length > MAX_CHARS) {
     result =
       result.slice(0, MAX_CHARS) +
       "\n\n... [dipotong: konten terlalu panjang, hanya " +
