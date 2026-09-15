@@ -75,7 +75,7 @@ export default function DocumentsPage() {
     const isPdf = file.type === "application/pdf" || ext === ".pdf";
 
     // Validasi ukuran (PDF max 10MB, lainnya max 1MB)
-    const maxSize = isPdf ? 10 * 1024 * 1024 : 1024 * 1024;
+    const maxSize = isPdf ? 30 * 1024 * 1024 : 1024 * 1024;
     if (file.size > maxSize) {
       alert(isPdf ? "Ukuran PDF maksimal 10MB." : "Ukuran file maksimal 1MB.");
       return;
@@ -244,8 +244,8 @@ export default function DocumentsPage() {
           </button>
           <p className="text-xs text-muted-lighter mt-2">
             {lang === "id"
-              ? "Mendukung: TXT, MD, PDF (PDF maks 10MB)"
-              : "Supported: TXT, MD, PDF (PDF max 10MB)"}
+              ? "Mendukung: TXT, MD, PDF (PDF maks 30MB)"
+              : "Supported: TXT, MD, PDF (PDF max 30MB)"}
           </p>
         </div>
 

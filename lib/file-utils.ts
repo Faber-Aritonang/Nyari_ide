@@ -43,8 +43,8 @@ export async function extractPdfText(
   file: File,
   maxPages?: number | "all"
 ): Promise<string> {
-  if (file.size > 10 * 1024 * 1024) {
-    throw new Error("File PDF terlalu besar. Maksimal 10MB.");
+  if (file.size > 30 * 1024 * 1024) {
+    throw new Error("File PDF terlalu besar. Maksimal 30MB.");
   }
 
   // Dynamic import pdf.js agar tidak memblokir loading page
