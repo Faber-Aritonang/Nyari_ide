@@ -1,9 +1,9 @@
-// app/api/chat/route.ts — Streaming chat endpoint
-// Client → POST /api/chat → Server verifikasi auth + ambil riwayat dari Supabase → Groq API → stream balik ke client
+// app/api/chat/route.ts — Streaming chat endpoint (Anthropic)
+// Client → POST /api/chat → Server verifikasi auth + ambil riwayat dari Supabase → Anthropic API → stream balik ke client
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { AVAILABLE_MODELS, DEFAULT_MODEL, CHAT_CONFIG } from "@/lib/groq";
+import { AVAILABLE_MODELS, DEFAULT_MODEL, CHAT_CONFIG } from "@/lib/anthropic";
 import { logger } from "@/lib/logger";
 import { getPersona, DEFAULT_PERSONA, type PersonaId } from "@/lib/personas";
 
@@ -98,26 +98,30 @@ export async function POST(request: NextRequest) {
     // Gabungkan system prompt dengan custom instructions dan RAG context
     const selectedPersona = getPersona((persona as PersonaId) || DEFAULT_PERSONA);
     let finalSystemPrompt = selectedPersona.systemPrompt;
-    
+
     if (customInstructions) {
       finalSystemPrompt += `\n\n[Instruksi kustom dari user]:\n${customInstructions}`;
     }
-    
+
     if (ragContext) {
       finalSystemPrompt += `\n\n[Konteks relevan dari dokumen/percakapan sebelumnya]:\n${ragContext}\n\nGunakan konteks di atas jika relevan dengan pertanyaan user. Jika tidak relevan, jawab seperti biasa.`;
     }
 
-    // 7. Bangun messages array untuk Groq
-    // Penting: HANYA konten terkini yang dikirim. Gambar/file lama di-strip
-    // untuk menghindari rate limit TPM (8000 TPM untuk free tier).
-    const MAX_HISTORY_MESSAGES = 10; // Kurangi dari 20 ke 10
-    const MAX_CHARS_PER_MESSAGE = 500; // Limit chars per message
+    // Limit system prompt size
+    const MAX_SYSTEM_PROMPT = 2000;
+    const truncate = (text: string, maxLen: number) =>
+      text.length > maxLen ? text.slice(0, maxLen) + "..." : text;
+    const truncatedSystemPrompt = truncate(finalSystemPrompt, MAX_SYSTEM_PROMPT);
+
+    // 8. Bangun messages array untuk Anthropic Messages API
+    const MAX_HISTORY_MESSAGES = 10;
+    const MAX_CHARS_PER_MESSAGE = 500;
     const recentHistory = (history ?? []).slice(-MAX_HISTORY_MESSAGES);
 
-    // Bangun konteks user message: teks + gambar + file (jika ada)
+    // Bangun konteks user message: teks + gambar (jika ada)
     const userParts: Array<
       | { type: "text"; text: string }
-      | { type: "image_url"; image_url: { url: string } }
+      | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
     > = [];
 
     // Teks utama (dengan context file jika ada)
@@ -128,27 +132,30 @@ export async function POST(request: NextRequest) {
     }
     userParts.push({ type: "text", text: userText });
 
-    // Gambar (jika ada)
+    // Gambar (jika ada) — konversi data URL ke base64 format Anthropic
     if (imageUrl) {
-      userParts.push({ type: "image_url", image_url: { url: imageUrl } });
+      const match = imageUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (match) {
+        userParts.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: match[1],
+            data: match[2],
+          },
+        });
+      }
     }
 
-    // Helper: truncate message to limit chars
-    const truncate = (text: string, maxLen: number) => 
-      text.length > maxLen ? text.slice(0, maxLen) + '...' : text;
-
-    // Limit system prompt size
-    const MAX_SYSTEM_PROMPT = 2000;
-    const truncatedSystemPrompt = truncate(finalSystemPrompt, MAX_SYSTEM_PROMPT);
-
-    const groqMessages = [
-      { role: "system", content: truncatedSystemPrompt },
-      // Riwayat: HANYA teks (gambar & file lama di-strip), truncated
+    // Bangun messages array untuk Anthropic
+    // Anthropic: system prompt di level atas, bukan di messages
+    const anthropicMessages = [
+      // Riwayat: HANYA teks (gambar & file lama di-strip)
       ...recentHistory.map((m) => ({
-        role: m.role,
+        role: m.role as "user" | "assistant",
         content: truncate(m.content ?? "", MAX_CHARS_PER_MESSAGE),
       })),
-      // Pesan saat ini: teks [+ file] [+ gambar]
+      // Pesan saat ini: teks [+ gambar]
       {
         role: "user" as const,
         content:
@@ -158,70 +165,81 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    // 7. Call Groq API dengan streaming
-    const groqResponse = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
+    // 9. Call Anthropic Messages API dengan streaming
+    const anthropicResponse = await fetch(
+      "https://api.anthropic.com/v1/messages",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
           "Content-Type": "application/json",
+          "x-api-key": process.env.ANTHROPIC_API_KEY ?? "",
+          "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
           model: selectedModel,
-          ...CHAT_CONFIG,
-          messages: groqMessages,
+          max_tokens: CHAT_CONFIG.max_tokens,
+          temperature: CHAT_CONFIG.temperature,
+          system: truncatedSystemPrompt,
+          messages: anthropicMessages,
           stream: true,
         }),
       }
     );
 
-    if (!groqResponse.ok) {
-      const errBody = await groqResponse.text();
-      logger.error("Groq API error:", groqResponse.status, errBody);
+    if (!anthropicResponse.ok) {
+      const errBody = await anthropicResponse.text();
+      logger.error("Anthropic API error:", anthropicResponse.status, errBody);
 
-      if (groqResponse.status === 429) {
+      if (anthropicResponse.status === 401 || anthropicResponse.status === 403) {
         return NextResponse.json(
-          {
-            error:
-              "⚡ Kuota Groq harian habis. Coba: (1) tunggu beberapa jam, (2) mulai percakapan baru, (3) upgrade Groq plan.",
-          },
-          { status: groqResponse.status }
+          { error: "Kunci API Anthropic tidak valid atau tidak aktif." },
+          { status: anthropicResponse.status }
         );
       }
 
-      if (groqResponse.status === 413) {
+      if (anthropicResponse.status === 429) {
+        return NextResponse.json(
+          {
+            error:
+              "⚡ Kuota Anthropic terlampaui. Coba: (1) tunggu beberapa saat, (2) gunakan model lebih ringan, (3) periksa billing.",
+          },
+          { status: anthropicResponse.status }
+        );
+      }
+
+      if (anthropicResponse.status === 413) {
         return NextResponse.json(
           {
             error:
               "📏 Pesan terlalu panjang. Coba: (1) mulai percakapan baru, (2) kurangi panjang pesan.",
           },
-          { status: groqResponse.status }
+          { status: anthropicResponse.status }
         );
       }
 
-      // Coba parse error message dari Groq
-      let groqErrorMsg = "Gagal menghubungi AI.";
+      // Coba parse error message dari Anthropic
+      let anthropicErrorMsg = "Gagal menghubungi AI.";
       try {
         const errJson = JSON.parse(errBody);
-        groqErrorMsg = errJson.error?.message || groqErrorMsg;
+        anthropicErrorMsg = errJson.error?.message || anthropicErrorMsg;
       } catch {
         // ignore
       }
 
       return NextResponse.json(
-        { error: groqErrorMsg + " Silakan coba lagi." },
+        { error: anthropicErrorMsg + " Silakan coba lagi." },
         { status: 502 }
       );
     }
 
-    // 8. Stream response ke client
+    // 10. Stream response ke client
+    // Anthropic SSE format: event: content_block_delta → data: {"delta":{"text":"..."}}
     const encoder = new TextEncoder();
     const chunks: string[] = [];
 
     const stream = new ReadableStream({
       async start(controller) {
-        const reader = groqResponse.body?.getReader();
+        const reader = anthropicResponse.body?.getReader();
         if (!reader) {
           controller.close();
           return;
@@ -246,40 +264,45 @@ export async function POST(request: NextRequest) {
               if (!trimmed || !trimmed.startsWith("data: ")) continue;
 
               const data = trimmed.slice(6);
-              if (data === "[DONE]") {
-                // Simpan assistant reply ke database
-                const fullContent = chunks.join("");
-                if (fullContent) {
-                  await supabase.from("messages").insert({
-                    conversation_id: conversationId,
-                    role: "assistant",
-                    content: fullContent,
-                  });
-
-                  // RAG: Index conversation untuk pencarian masa depan
-                  try {
-                    const { indexConversation } = await import("@/lib/rag/search");
-                    await indexConversation(conversationId, user.id, [
-                      { role: "user", content: message.trim() },
-                      { role: "assistant", content: fullContent },
-                    ]);
-                  } catch (err) {
-                    logger.error("RAG indexing error (non-critical):", err);
-                  }
-                }
-                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                controller.close();
-                return;
-              }
 
               try {
                 const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
+
+                // Anthropic streaming events:
+                // content_block_delta → { type: "content_block_delta", delta: { type: "text_delta", text: "..." } }
+                // message_stop → selesai
+                if (parsed.type === "content_block_delta" && parsed.delta?.text) {
+                  const content = parsed.delta.text;
                   chunks.push(content);
                   controller.enqueue(
                     encoder.encode(`data: ${JSON.stringify({ content })}\n\n`)
                   );
+                }
+
+                if (parsed.type === "message_stop") {
+                  // Simpan assistant reply ke database
+                  const fullContent = chunks.join("");
+                  if (fullContent) {
+                    await supabase.from("messages").insert({
+                      conversation_id: conversationId,
+                      role: "assistant",
+                      content: fullContent,
+                    });
+
+                    // RAG: Index conversation untuk pencarian masa depan
+                    try {
+                      const { indexConversation } = await import("@/lib/rag/search");
+                      await indexConversation(conversationId, user.id, [
+                        { role: "user", content: message.trim() },
+                        { role: "assistant", content: fullContent },
+                      ]);
+                    } catch (err) {
+                      logger.error("RAG indexing error (non-critical):", err);
+                    }
+                  }
+                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                  controller.close();
+                  return;
                 }
               } catch {
                 // skip malformed JSON
@@ -290,7 +313,7 @@ export async function POST(request: NextRequest) {
           logger.error("Stream processing error:", err);
         }
 
-        // Fallback: save accumulated content if [DONE] wasn't received
+        // Fallback: save accumulated content if message_stop wasn't received
         if (chunks.length > 0) {
           const fullContent = chunks.join("");
           await supabase.from("messages").insert({
