@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth-client";
 import { AuroraBackground } from "@/app/components/Effects3D";
 
 interface WhitelistEntry {
@@ -13,7 +13,6 @@ interface WhitelistEntry {
 }
 
 export default function AdminPage() {
-  const supabase = createClient();
   const router = useRouter();
 
   const [emails, setEmails] = useState<WhitelistEntry[]>([]);
@@ -30,8 +29,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     async function init() {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
+      const { data } = await authClient.getSession();
+      if (!data?.session || !data.user) {
         router.push("/login");
         return;
       }
@@ -46,7 +45,7 @@ export default function AdminPage() {
       await fetchEmails();
     }
     init();
-  }, [supabase, router]);
+  }, [router]);
 
   async function fetchEmails() {
     setLoading(true);

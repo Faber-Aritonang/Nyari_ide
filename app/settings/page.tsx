@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth-client";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
 import { AuroraBackground } from "@/app/components/Effects3D";
 
@@ -14,16 +14,13 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [lang, setLangState] = useState<Lang>("id");
   const router = useRouter();
-  const supabase = createClient();
 
   // Load custom instructions & check auth
   useEffect(() => {
     const loadData = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data } = await authClient.getSession();
 
-      if (!user) {
+      if (!data?.session || !data.user) {
         router.push("/login");
         return;
       }
@@ -42,7 +39,7 @@ export default function SettingsPage() {
     };
 
     loadData();
-  }, [router, supabase]);
+  }, [router]);
 
   const handleSave = async () => {
     setSaving(true);

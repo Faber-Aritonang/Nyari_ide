@@ -3,36 +3,23 @@
 // POST/PUT: simpan custom instructions
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/session";
+import { query, queryOne } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data, error } = await supabase
-      .from("custom_instructions")
-      .select("instructions")
-      .eq("user_id", user.id)
-      .single();
+    const data = await queryOne<{ instructions: string }>(
+      "SELECT instructions FROM custom_instructions WHERE user_id = $1",
+      [user.id]
+    );
 
     // Jika belum ada record, return empty string
-    if (error && error.code === "PGRST116") {
-      return NextResponse.json({ instructions: "" });
-    }
-
-    if (error) {
-      logger.error("Failed to fetch custom instructions:", error);
-      return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
-    }
-
     return NextResponse.json({ instructions: data?.instructions || "" });
   } catch (error) {
     logger.error("GET instructions error:", error);
@@ -42,11 +29,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -64,19 +47,13 @@ export async function POST(request: NextRequest) {
     const trimmed = instructions.slice(0, 2000);
 
     // Upsert: insert or update
-    const { error } = await supabase.from("custom_instructions").upsert(
-      {
-        user_id: user.id,
-        instructions: trimmed,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" }
+    await query(
+      `INSERT INTO custom_instructions (user_id, instructions, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (user_id)
+       DO UPDATE SET instructions = $2, updated_at = NOW()`,
+      [user.id, trimmed]
     );
-
-    if (error) {
-      logger.error("Failed to save custom instructions:", error);
-      return NextResponse.json({ error: "Failed to save" }, { status: 500 });
-    }
 
     return NextResponse.json({ success: true, instructions: trimmed });
   } catch (error) {

@@ -3,31 +3,22 @@
 // POST: Upload document baru
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/session";
+import { query, queryOne } from "@/lib/db";
 import { chunkText, generateEmbedding } from "@/lib/rag/embeddings";
 import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data, error } = await supabase
-      .from("documents")
-      .select("id, title, filename, file_type, file_size, chunk_count, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      logger.error("Failed to fetch documents:", error);
-      return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
-    }
+    const data = await query(
+      "SELECT id, title, filename, file_type, file_size, chunk_count, created_at FROM documents WHERE user_id = $1 ORDER BY created_at DESC",
+      [user.id]
+    );
 
     return NextResponse.json({ documents: data || [] });
   } catch (error) {
@@ -38,11 +29,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -60,21 +47,19 @@ export async function POST(request: NextRequest) {
     const truncatedContent = content.slice(0, 100000);
 
     // 1. Simpan document
-    const { data: doc, error: docError } = await supabase
-      .from("documents")
-      .insert({
-        user_id: user.id,
+    const doc = await queryOne<{ id: string }>(
+      "INSERT INTO documents (user_id, title, filename, content, file_type, file_size) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+      [
+        user.id,
         title,
-        filename: filename || title,
-        content: truncatedContent,
-        file_type: file_type || "txt",
-        file_size: truncatedContent.length,
-      })
-      .select("id")
-      .single();
+        filename || title,
+        truncatedContent,
+        file_type || "txt",
+        truncatedContent.length,
+      ]
+    );
 
-    if (docError) {
-      logger.error("Failed to save document:", docError);
+    if (!doc) {
       return NextResponse.json({ error: "Failed to save document" }, { status: 500 });
     }
 
@@ -87,44 +72,47 @@ export async function POST(request: NextRequest) {
       const chunk = chunks[i];
 
       // Simpan chunk
-      const { data: chunkData, error: chunkError } = await supabase
-        .from("document_chunks")
-        .insert({
-          document_id: doc.id,
-          user_id: user.id,
-          chunk_index: i,
-          content: chunk,
-          token_count: Math.ceil(chunk.length / 4), // rough estimate
-        })
-        .select("id")
-        .single();
+      const chunkData = await queryOne<{ id: string }>(
+        "INSERT INTO document_chunks (document_id, user_id, chunk_index, content, token_count) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+        [
+          doc.id,
+          user.id,
+          i,
+          chunk,
+          Math.ceil(chunk.length / 4), // rough estimate
+        ]
+      );
 
-      if (chunkError) {
-        logger.error("Failed to save chunk:", chunkError);
+      if (!chunkData) {
+        logger.error("Failed to save chunk:", i);
         continue;
       }
 
-      // Generate dan simpan embedding
-      const embedding = await generateEmbedding(chunk);
+      try {
+        // Generate dan simpan embedding (vector disimpan sebagai string "[...]") 
+        const embedding = await generateEmbedding(chunk);
 
-      await supabase.from("embeddings").insert({
-        chunk_id: chunkData.id,
-        user_id: user.id,
-        embedding: JSON.stringify(embedding),
-        source_type: "document",
-        source_id: doc.id,
-        content: chunk,
-        metadata: { document_title: title, chunk_index: i },
-      });
+        await query(
+          `INSERT INTO embeddings (chunk_id, user_id, embedding, source_type, source_id, content, metadata)
+           VALUES ($1, $2, $3::vector, 'document', $4, $5, $6::jsonb)`,
+          [
+            chunkData.id,
+            user.id,
+            JSON.stringify(embedding),
+            doc.id,
+            chunk,
+            JSON.stringify({ document_title: title, chunk_index: i }),
+          ]
+        );
 
-      chunkCount++;
+        chunkCount++;
+      } catch (embedError) {
+        logger.error("Failed to save embedding:", embedError);
+      }
     }
 
     // Update chunk count
-    await supabase
-      .from("documents")
-      .update({ chunk_count: chunkCount })
-      .eq("id", doc.id);
+    await query("UPDATE documents SET chunk_count = $2 WHERE id = $1", [doc.id, chunkCount]);
 
     return NextResponse.json({
       success: true,

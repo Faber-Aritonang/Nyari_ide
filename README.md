@@ -131,8 +131,8 @@ Pilih persona AI yang sesuai dengan kebutuhan Anda:
 Pengguna (browser)
 │ login email+password
 ▼
-Next.js Web App ──► Supabase Auth (whitelist maks 10 akun)
-│                    Supabase DB (riwayat chat per user)
+Next.js Web App ──► Better Auth (whitelist maks 10 akun)
+│                    Neon Postgres (riwayat chat per user, pgvector untuk RAG)
 │                    IndexedDB (offline cache)
 │
 ├──► Groq API : chat text + vision + whisper + Orpheus TTS (LLM opensource)
@@ -213,7 +213,7 @@ Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 | [`ROADMAP.md`](./ROADMAP.md) | Rencana kerja per fase dengan milestone |
 | [`docs/design-decisions.md`](./docs/design-decisions.md) | Log semua keputusan desain beserta alasannya |
 | [`docs/setup.md`](./docs/setup.md) | Panduan setup environment & deploy |
-| [`docs/api-notes.md`](./docs/api-notes.md) | Catatan teknis integrasi Groq, Pollinations, Supabase |
+| [`docs/api-notes.md`](./docs/api-notes.md) | Catatan teknis integrasi Groq, Pollinations, Better Auth/Neon |
 
 ---
 
@@ -229,7 +229,7 @@ Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 | Syntax Highlighting | rehype-highlight + highlight.js |
 | Code Execution | Sandboxed iframe (JavaScript) |
 | PDF extraction | pdfjs-dist (client-side) |
-| Auth + Database | Supabase (email+password, PostgreSQL, RLS) |
+| Auth + Database | Better Auth (email+password) + Neon Postgres (pgvector untuk RAG) |
 | Offline Cache | IndexedDB (percakapan terakhir) |
 | Export | jsPDF + html2canvas (PDF), JSON, Markdown |
 | Logging | lib/logger.ts (production-safe, silent di production) |

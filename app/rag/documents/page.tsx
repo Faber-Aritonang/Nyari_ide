@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth-client";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
 import { AuroraBackground } from "@/app/components/Effects3D";
 import { extractPdfText } from "@/lib/file-utils";
@@ -27,15 +27,12 @@ export default function DocumentsPage() {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const supabase = createClient();
 
   useEffect(() => {
     const loadData = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data } = await authClient.getSession();
 
-      if (!user) {
+      if (!data?.session || !data.user) {
         router.push("/login");
         return;
       }
@@ -45,7 +42,7 @@ export default function DocumentsPage() {
     };
 
     loadData();
-  }, [router, supabase]);
+  }, [router]);
 
   const fetchDocuments = async () => {
     try {

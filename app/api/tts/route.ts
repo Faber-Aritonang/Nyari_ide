@@ -2,7 +2,7 @@
 // Client minta TTS → server call Groq Orpheus → stream audio balik ke client
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/session";
 import { logger } from "@/lib/logger";
 
 // Voice options per model
@@ -12,11 +12,7 @@ const AR_VOICES = ["noura", "lulwa", "aisha", "fahad", "sultan", "abdullah"] as 
 export async function POST(request: NextRequest) {
   try {
     // 1. Verifikasi autentikasi
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

@@ -2,62 +2,44 @@
 // GET: Return all messages with generated_image_url
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/session";
+import { query } from "@/lib/db";
 import { logger } from "@/lib/logger";
+
+interface ImageRow {
+  id: string;
+  content: string | null;
+  generated_image_url: string;
+  created_at: string;
+  conversation_id: string;
+  conversation_title: string;
+}
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch user's conversation IDs first
-    const { data: userConversations } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("user_id", user.id);
-
-    const convIds = userConversations?.map((c) => c.id) || [];
-
-    if (convIds.length === 0) {
-      return NextResponse.json({ images: [] });
-    }
-
     // Fetch all messages with generated images from user's conversations
-    const { data: messages, error } = await supabase
-      .from("messages")
-      .select("id, content, generated_image_url, created_at, conversation_id")
-      .in("conversation_id", convIds)
-      .not("generated_image_url", "is", null)
-      .order("created_at", { ascending: false });
+    const rows = await query<ImageRow>(
+      `SELECT m.id, m.content, m.generated_image_url, m.created_at, m.conversation_id, c.title AS conversation_title
+       FROM messages m
+       JOIN conversations c ON c.id = m.conversation_id
+       WHERE c.user_id = $1 AND m.generated_image_url IS NOT NULL
+       ORDER BY m.created_at DESC`,
+      [user.id]
+    );
 
-    if (error) {
-      logger.error("[images] Error fetching images:", error);
-      return NextResponse.json({ error: "Failed to fetch images" }, { status: 500 });
-    }
-
-    // Also get conversation titles for context
-    const conversationIds = [...new Set(messages?.map((m) => m.conversation_id) || [])];
-    const { data: conversations } = await supabase
-      .from("conversations")
-      .select("id, title")
-      .in("id", conversationIds);
-
-    const conversationMap = new Map(conversations?.map((c) => [c.id, c.title]) || []);
-
-    const images = messages?.map((m) => ({
+    const images = rows.map((m) => ({
       id: m.id,
       url: m.generated_image_url,
       prompt: m.content?.replace(/^\[🎨.*?\]\s*/, "").trim() || "",
       conversationId: m.conversation_id,
-      conversationTitle: conversationMap.get(m.conversation_id) || "Unknown",
+      conversationTitle: m.conversation_title || "Unknown",
       createdAt: m.created_at,
-    })) || [];
+    }));
 
     return NextResponse.json({ images });
   } catch (error) {

@@ -1,46 +1,35 @@
 // app/api/prompts/route.ts — Prompt Library API
 // GET: List user's saved prompts
 // POST: Save a new prompt
+// DELETE: Delete a saved prompt
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/session";
+import { query, queryOne, isUuid } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: prompts, error } = await supabase
-      .from("saved_prompts")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    const prompts = await query(
+      "SELECT * FROM saved_prompts WHERE user_id = $1 ORDER BY created_at DESC",
+      [user.id]
+    );
 
-    if (error) {
-      console.error("Failed to fetch prompts:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json(prompts || []);
+    return NextResponse.json(prompts);
   } catch (error) {
-    console.error("GET prompts error:", error);
+    logger.error("GET prompts error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -51,36 +40,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Title and content are required" }, { status: 400 });
     }
 
-    const { data: prompt, error } = await supabase
-      .from("saved_prompts")
-      .insert({
-        user_id: user.id,
-        title,
-        content,
-        category: category || "general",
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Failed to save prompt:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    const prompt = await queryOne(
+      "INSERT INTO saved_prompts (user_id, title, content, category) VALUES ($1, $2, $3, $4) RETURNING *",
+      [user.id, title, content, category || "general"]
+    );
 
     return NextResponse.json(prompt, { status: 201 });
   } catch (error) {
-    console.error("POST prompts error:", error);
+    logger.error("POST prompts error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -91,20 +65,15 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Prompt ID is required" }, { status: 400 });
     }
 
-    const { error } = await supabase
-      .from("saved_prompts")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", user.id);
-
-    if (error) {
-      console.error("Failed to delete prompt:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: "Invalid prompt id" }, { status: 400 });
     }
+
+    await query("DELETE FROM saved_prompts WHERE id = $1 AND user_id = $2", [id, user.id]);
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("DELETE prompts error:", error);
+    logger.error("DELETE prompts error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

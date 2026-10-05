@@ -3,13 +3,13 @@
 > ⭐ FILE KUNCI KONTINUITAS. Update setiap akhir sesi kerja!
 > AI assistant cukup dibekali file ini untuk melanjutkan project.
 
-Last updated: 29 Agustus 2026
-Current phase: v2.1 SELESAI ✅
+Last updated: 5 Oktober 2026
+Current phase: Migrasi Supabase → Neon + Better Auth SELESAI ✅ (data terimpor, alur reset password tersedia)
 
 ## Ringkasan Project
 Webpage chat AI multimodal (text, image, voice), LLM opensource via Groq API,
 deploy free di internet, akses terbatas via whitelist (maks 10 akun),
-autentikasi email+password (Supabase).
+autentikasi email+password (Better Auth).
 
 ## Tech Stack
 - Frontend: Next.js 16 (App Router, TypeScript, Tailwind CSS)
@@ -19,7 +19,7 @@ autentikasi email+password (Supabase).
 - STT: Whisper Large v3 Turbo via Groq
 - Text-to-image: Pollinations.ai (GPT Image 2)
 - PDF extraction: pdfjs-dist (client-side)
-- Auth & DB & Storage: Supabase (auth, Postgres, RLS)
+- Auth & DB: Better Auth (email+password) + Neon Postgres (pgvector untuk RAG)
 - Deploy: Vercel (free tier)
 - Markdown rendering: react-markdown
 
@@ -70,7 +70,7 @@ autentikasi email+password (Supabase).
 | 👤 Admin whitelist | /admin — tambah/hapus email | Gratis |
 | 🔒 Admin restriction | Hanya faber.aritonang@gmail.com | - |
 | 🔄 Model selector | Dropdown (4 model tersedia) | Gratis |
-| 🗂️ Riwayat chat | Supabase per user, RLS aktif | Gratis |
+| 🗂️ Riwayat chat | Neon Postgres per user (filter user_id di API route) | Gratis |
 
 ## Struktur File Penting
 ```
@@ -94,24 +94,24 @@ app/
 ├── page.tsx                       — Redirect
 └── layout.tsx                     — Root layout + ThemeProvider
 lib/
-├── groq.ts                        — Config model (AVAILABLE_MODELS, CHAT_CONFIG)
-├── auth.ts                        — isEmailAllowed()
+├── anthropic.ts                   — Config model (AVAILABLE_MODELS, CHAT_CONFIG)
+├── auth.ts                        — Better Auth (bcrypt, whitelist hook, reset password)
 ├── image-utils.ts                 — Kompres gambar (512x512 JPEG)
 ├── image-gen.ts                   — Text-to-image via Pollinations.ai
 ├── file-utils.ts                  — Baca file teks + extract PDF
 ├── voice-utils.ts                 — MediaRecorder wrapper
 ├── i18n.ts                        — String ID/EN
 ├── theme-context.tsx              — Dark/Light mode toggle
-└── supabase/
-    ├── server.ts                  — Server-side Supabase client
-    ├── client.ts                  — Browser-side Supabase client
-    └── middleware.ts               — Auth + admin restriction
+├── db.ts                          — Pool Postgres Neon + query()/queryOne()
+├── auth-client.ts                 — Better Auth (browser)
+├── session.ts                     — getAuthUser() (sesi server)
+└── rag/search.ts                  — pgvector search_embeddings() + indexConversation()
 middleware.ts                       — Next.js middleware entry point
 ```
 
 ## Keputusan Desain Penting (ringkas)
 - Whitelist manual via tabel `allowed_emails` (maks 10 akun)
-- Riwayat chat disimpan di Supabase per user, RLS aktif
+- Riwayat chat disimpan di Neon per user; tanpa RLS — semua query difilter `user_id` di API route
 - API key TIDAK PERNAH di frontend → semua via API route server-side
 - Streaming via ReadableStream dari API route ke client
 - Riwayat diambil server-side sebelum call Groq (bukan dari client)

@@ -1,8 +1,8 @@
 // app/api/shared/[token]/route.ts — Get shared conversation
-// GET: Ambil percakapan publik berdasarkan token
+// GET: Ambil percakapan publik berdasarkan token (tanpa auth)
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { queryOne, query } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
 export async function GET(
@@ -12,20 +12,17 @@ export async function GET(
   try {
     const { token } = await params;
 
-    // Gunakan service role untuk akses public (tanpa auth)
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    // Cari share link
+    const shareLink = await queryOne<{
+      conversation_id: string;
+      is_public: boolean;
+      expires_at: string | null;
+    }>(
+      "SELECT conversation_id, is_public, expires_at FROM share_links WHERE token = $1",
+      [token]
     );
 
-    // Cari share link
-    const { data: shareLink, error: linkError } = await supabase
-      .from("share_links")
-      .select("conversation_id, is_public, expires_at")
-      .eq("token", token)
-      .single();
-
-    if (linkError || !shareLink) {
+    if (!shareLink) {
       return NextResponse.json(
         { error: "Share link not found" },
         { status: 404 }
@@ -40,10 +37,7 @@ export async function GET(
       );
     }
 
-    if (
-      shareLink.expires_at &&
-      new Date(shareLink.expires_at) < new Date()
-    ) {
+    if (shareLink.expires_at && new Date(shareLink.expires_at) < new Date()) {
       return NextResponse.json(
         { error: "This share link has expired" },
         { status: 410 }
@@ -51,13 +45,12 @@ export async function GET(
     }
 
     // Ambil percakapan
-    const { data: conversation, error: convError } = await supabase
-      .from("conversations")
-      .select("title, created_at")
-      .eq("id", shareLink.conversation_id)
-      .single();
+    const conversation = await queryOne<{ title: string; created_at: string }>(
+      "SELECT title, created_at FROM conversations WHERE id = $1",
+      [shareLink.conversation_id]
+    );
 
-    if (convError || !conversation) {
+    if (!conversation) {
       return NextResponse.json(
         { error: "Conversation not found" },
         { status: 404 }
@@ -65,24 +58,20 @@ export async function GET(
     }
 
     // Ambil pesan
-    const { data: messages, error: msgError } = await supabase
-      .from("messages")
-      .select("role, content, image_url, created_at")
-      .eq("conversation_id", shareLink.conversation_id)
-      .order("created_at", { ascending: true });
-
-    if (msgError) {
-      logger.error("Failed to fetch messages:", msgError);
-      return NextResponse.json(
-        { error: "Failed to fetch messages" },
-        { status: 500 }
-      );
-    }
+    const messages = await query<{
+      role: string;
+      content: string;
+      image_url: string | null;
+      created_at: string;
+    }>(
+      "SELECT role, content, image_url, created_at FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC",
+      [shareLink.conversation_id]
+    );
 
     return NextResponse.json({
       title: conversation.title,
       created_at: conversation.created_at,
-      messages: messages || [],
+      messages: messages,
     });
   } catch (error) {
     logger.error("Shared conversation error:", error);

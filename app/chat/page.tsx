@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth-client";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import ChatMessage, { type Message } from "@/app/components/ChatMessage";
@@ -36,7 +36,6 @@ interface ModelOption {
 }
 
 export default function ChatPage() {
-  const supabase = createClient();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
 
@@ -92,8 +91,8 @@ export default function ChatPage() {
   // Get user info & conversations on mount
   useEffect(() => {
     async function init() {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
+      const { data } = await authClient.getSession();
+      if (!data?.session || !data.user) {
         router.push("/login");
         return;
       }
@@ -117,7 +116,7 @@ export default function ChatPage() {
       }
     }
     init();
-  }, [supabase, router]);
+  }, [router]);
 
   // Fetch messages when active conversation changes
   useEffect(() => {
@@ -1076,7 +1075,7 @@ export default function ChatPage() {
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    await authClient.signOut();
     router.push("/login");
   }
 

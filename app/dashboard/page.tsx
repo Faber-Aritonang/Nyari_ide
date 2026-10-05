@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -11,18 +11,18 @@ import {
 } from "@/app/components/Effects3D";
 
 export default function Dashboard() {
-  const supabase = createClient();
   const router = useRouter();
   const [email, setEmail] = useState<string>("");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setEmail(data.user.email ?? "");
+    authClient.getSession().then(({ data }) => {
+      if (data?.session && data.user) setEmail(data.user.email ?? "");
+      else router.push("/login");
     });
-  }, [supabase]);
+  }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await authClient.signOut();
     router.push("/login");
   };
 

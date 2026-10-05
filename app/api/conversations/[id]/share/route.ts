@@ -2,7 +2,8 @@
 // POST: Generate atau dapatkan share link untuk percakapan
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/session";
+import { query, queryOne, isUuid } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
 export async function POST(
@@ -10,26 +11,24 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id: conversationId } = await params;
 
-    // Verifikasi conversation milik user ini
-    const { data: conversation, error: convError } = await supabase
-      .from("conversations")
-      .select("id, title")
-      .eq("id", conversationId)
-      .eq("user_id", user.id)
-      .single();
+    if (!isUuid(conversationId)) {
+      return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+    }
 
-    if (convError || !conversation) {
+    // Verifikasi conversation milik user ini
+    const conversation = await queryOne<{ id: string; title: string }>(
+      "SELECT id, title FROM conversations WHERE id = $1 AND user_id = $2",
+      [conversationId, user.id]
+    );
+
+    if (!conversation) {
       return NextResponse.json(
         { error: "Conversation not found" },
         { status: 404 }
@@ -37,21 +36,19 @@ export async function POST(
     }
 
     // Cek apakah sudah ada share link
-    const { data: existingLink } = await supabase
-      .from("share_links")
-      .select("id, token, created_at")
-      .eq("conversation_id", conversationId)
-      .eq("user_id", user.id)
-      .single();
+    const existingLink = await queryOne<{ id: string; token: string; created_at: string }>(
+      "SELECT id, token, created_at FROM share_links WHERE conversation_id = $1 AND user_id = $2",
+      [conversationId, user.id]
+    );
+
+    const { is_public } = await request.json().catch(() => ({ is_public: true }));
 
     if (existingLink) {
       // Update is_public jika ada perubahan
-      const { is_public } = await request.json().catch(() => ({ is_public: true }));
-      
-      await supabase
-        .from("share_links")
-        .update({ is_public: is_public ?? true })
-        .eq("id", existingLink.id);
+      await query(
+        "UPDATE share_links SET is_public = $2 WHERE id = $1",
+        [existingLink.id, is_public ?? true]
+      );
 
       return NextResponse.json({
         token: existingLink.token,
@@ -60,21 +57,13 @@ export async function POST(
       });
     }
 
-    // Generate share link baru
-    const { is_public } = await request.json().catch(() => ({ is_public: true }));
+    // Generate share link baru (token dibuat oleh DB default)
+    const newLink = await queryOne<{ token: string; created_at: string }>(
+      "INSERT INTO share_links (conversation_id, user_id, is_public) VALUES ($1, $2, $3) RETURNING token, created_at",
+      [conversationId, user.id, is_public ?? true]
+    );
 
-    const { data: newLink, error: linkError } = await supabase
-      .from("share_links")
-      .insert({
-        conversation_id: conversationId,
-        user_id: user.id,
-        is_public: is_public ?? true,
-      })
-      .select("token, created_at")
-      .single();
-
-    if (linkError) {
-      logger.error("Failed to create share link:", linkError);
+    if (!newLink) {
       return NextResponse.json(
         { error: "Failed to create share link" },
         { status: 500 }
@@ -101,36 +90,27 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id: conversationId } = await params;
 
-    const { error } = await supabase
-      .from("share_links")
-      .delete()
-      .eq("conversation_id", conversationId)
-      .eq("user_id", user.id);
-
-    if (error) {
-      logger.error("Failed to delete share link:", error);
-      return NextResponse.json(
-        { error: "Failed to delete share link" },
-        { status: 500 }
-      );
+    if (!isUuid(conversationId)) {
+      return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
     }
+
+    await query(
+      "DELETE FROM share_links WHERE conversation_id = $1 AND user_id = $2",
+      [conversationId, user.id]
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error("Delete share link error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to delete share link" },
       { status: 500 }
     );
   }

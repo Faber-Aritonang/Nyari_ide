@@ -1,57 +1,47 @@
 // app/api/conversations/route.ts — List & buat percakapan baru
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/session";
+import { query, queryOne } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 // GET /api/conversations — List semua percakapan user
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
-    .from("conversations")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    const data = await query(
+      "SELECT * FROM conversations WHERE user_id = $1 ORDER BY created_at DESC",
+      [user.id]
+    );
+    return NextResponse.json(data);
+  } catch (error) {
+    logger.error("Failed to list conversations:", error);
+    return NextResponse.json({ error: "Failed to fetch conversations" }, { status: 500 });
   }
-
-  return NextResponse.json(data);
 }
 
 // POST /api/conversations — Buat percakapan baru
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { title } = await request.json();
+  try {
+    const { title } = await request.json();
 
-  const { data, error } = await supabase
-    .from("conversations")
-    .insert({
-      user_id: user.id,
-      title: title || "Percakapan baru",
-    })
-    .select()
-    .single();
+    const data = await queryOne(
+      "INSERT INTO conversations (user_id, title) VALUES ($1, $2) RETURNING *",
+      [user.id, title || "Percakapan baru"]
+    );
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data, { status: 201 });
+  } catch (error) {
+    logger.error("Failed to create conversation:", error);
+    return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
   }
-
-  return NextResponse.json(data, { status: 201 });
 }

@@ -2,7 +2,8 @@
 // PATCH: Update reaction (like/dislike)
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/session";
+import { queryOne, query, isUuid } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
 export async function PATCH(
@@ -10,11 +11,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -30,35 +27,30 @@ export async function PATCH(
       );
     }
 
-    // Verify message belongs to user (via conversation)
-    const { data: message, error: fetchError } = await supabase
-      .from("messages")
-      .select("id, conversation_id, conversations!inner(user_id)")
-      .eq("id", id)
-      .single();
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    }
 
-    if (fetchError || !message) {
+    // Verify message belongs to user (via conversation)
+    const message = await queryOne<{ id: string; conversation_id: string; user_id: string }>(
+      `SELECT m.id, m.conversation_id, c.user_id
+       FROM messages m
+       JOIN conversations c ON c.id = m.conversation_id
+       WHERE m.id = $1`,
+      [id]
+    );
+
+    if (!message) {
       return NextResponse.json({ error: "Message not found" }, { status: 404 });
     }
 
     // Check ownership
-    if ((message.conversations as any).user_id !== user.id) {
+    if (message.user_id !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Update reaction
-    const { error: updateError } = await supabase
-      .from("messages")
-      .update({ reaction })
-      .eq("id", id);
-
-    if (updateError) {
-      logger.error("Failed to update reaction:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update reaction" },
-        { status: 500 }
-      );
-    }
+    await query("UPDATE messages SET reaction = $2 WHERE id = $1", [id, reaction]);
 
     return NextResponse.json({ success: true, reaction });
   } catch (error) {

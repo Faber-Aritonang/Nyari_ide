@@ -2,32 +2,27 @@
 // GET: Return usage statistics for the current user
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/session";
+import { query, queryOne } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user's conversation IDs (messages don't have user_id directly)
-    const { data: userConversations } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("user_id", user.id);
-
-    const convIds = userConversations?.map((c) => c.id) || [];
+    const userConversations = "SELECT id FROM conversations WHERE user_id = $1";
 
     // 1. Total conversations
-    const totalConversations = convIds.length;
+    const totalConvRow = await queryOne<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM conversations WHERE user_id = $1`,
+      [user.id]
+    );
+    const totalConversations = parseInt(totalConvRow?.count || "0", 10);
 
-    if (convIds.length === 0) {
+    if (totalConversations === 0) {
       return NextResponse.json({
         stats: { totalConversations: 0, totalMessages: 0, userMessages: 0, assistantMessages: 0, totalImages: 0, totalDocuments: 0, accountAge: 0 },
         messagesByDay: {},
@@ -35,37 +30,39 @@ export async function GET() {
       });
     }
 
-    // 2. Total messages
-    const { count: totalMessages } = await supabase
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .in("conversation_id", convIds);
-
-    // 3. Messages by role (user vs assistant)
-    const { data: messagesByRole } = await supabase
-      .from("messages")
-      .select("role")
-      .in("conversation_id", convIds);
-
-    const userMessages = messagesByRole?.filter((m) => m.role === "user").length || 0;
-    const assistantMessages = messagesByRole?.filter((m) => m.role === "assistant").length || 0;
+    // 2 & 3. Total messages + per role (1 query)
+    const roleCounts = await query<{ role: string; count: string }>(
+      `SELECT role, COUNT(*)::text AS count
+       FROM messages
+       WHERE conversation_id IN (${userConversations})
+       GROUP BY role`,
+      [user.id]
+    );
+    const countFor = (role: string) =>
+      parseInt(roleCounts.find((r) => r.role === role)?.count || "0", 10);
+    const userMessages = countFor("user");
+    const assistantMessages = countFor("assistant");
+    const totalMessages = roleCounts.reduce((sum, r) => sum + parseInt(r.count, 10), 0);
 
     // 4. Images generated
-    const { count: totalImages } = await supabase
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .in("conversation_id", convIds)
-      .not("generated_image_url", "is", null);
+    const imagesRow = await queryOne<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM messages
+       WHERE conversation_id IN (${userConversations}) AND generated_image_url IS NOT NULL`,
+      [user.id]
+    );
+    const totalImages = parseInt(imagesRow?.count || "0", 10);
 
     // 5. Messages per day (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const { data: recentMessages } = await supabase
-      .from("messages")
-      .select("created_at")
-      .in("conversation_id", convIds)
-      .gte("created_at", sevenDaysAgo.toISOString());
+    const recentMessages = await query<{ created_at: string }>(
+      `SELECT created_at
+       FROM messages
+       WHERE conversation_id IN (${userConversations}) AND created_at >= $2`,
+      [user.id, sevenDaysAgo.toISOString()]
+    );
 
     // Group by day
     const messagesByDay: Record<string, number> = {};
@@ -75,56 +72,56 @@ export async function GET() {
       const key = d.toISOString().split("T")[0];
       messagesByDay[key] = 0;
     }
-    recentMessages?.forEach((m) => {
-      const day = m.created_at.split("T")[0];
+    recentMessages.forEach((m) => {
+      const day = new Date(m.created_at).toISOString().split("T")[0];
       if (messagesByDay[day] !== undefined) {
         messagesByDay[day]++;
       }
     });
 
     // 6. Documents uploaded
-    const { count: totalDocuments } = await supabase
-      .from("documents")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id);
+    const docsRow = await queryOne<{ count: string }>(
+      "SELECT COUNT(*)::text AS count FROM documents WHERE user_id = $1",
+      [user.id]
+    );
+    const totalDocuments = parseInt(docsRow?.count || "0", 10);
 
-    // 7. Most active conversations
-    const { data: topConversations } = await supabase
-      .from("conversations")
-      .select("id, title")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false })
-      .limit(5);
+    // 7. Most active conversations (by updated_at)
+    const topConversations = await query<{ id: string; title: string }>(
+      "SELECT id, title FROM conversations WHERE user_id = $1 ORDER BY updated_at DESC NULLS LAST LIMIT 5",
+      [user.id]
+    );
 
     // Get message counts for top conversations (1 query instead of N)
-    const topConvIds = topConversations?.map((c) => c.id) || [];
-    const { data: topConvMessages } = topConvIds.length > 0
-      ? await supabase
-          .from("messages")
-          .select("conversation_id")
-          .in("conversation_id", topConvIds)
-      : { data: [] };
+    const topConvIds = topConversations.map((c) => c.id);
+    let msgCountMap = new Map<string, number>();
+    if (topConvIds.length > 0) {
+      const topConvMessages = await query<{ conversation_id: string; count: string }>(
+        `SELECT conversation_id, COUNT(*)::text AS count
+         FROM messages
+         WHERE conversation_id = ANY($1::uuid[])
+         GROUP BY conversation_id`,
+        [topConvIds]
+      );
+      msgCountMap = new Map(
+        topConvMessages.map((m) => [m.conversation_id, parseInt(m.count, 10)])
+      );
+    }
 
-    const msgCountMap = new Map<string, number>();
-    topConvMessages?.forEach((m) => {
-      msgCountMap.set(m.conversation_id, (msgCountMap.get(m.conversation_id) || 0) + 1);
-    });
-
-    const topConvWithCounts = topConversations?.map((conv) => ({
+    const topConvWithCounts = topConversations.map((conv) => ({
       ...conv,
       messageCount: msgCountMap.get(conv.id) || 0,
-    })) || [];
+    }));
 
-    // 8. Account age
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("created_at")
-      .eq("id", user.id)
-      .single();
+    // 8. Account age (dari tabel "user" Better Auth)
+    const profile = await queryOne<{ createdAt: string }>(
+      'SELECT "createdAt" FROM "user" WHERE id = $1',
+      [user.id]
+    );
 
-    const accountAge = profile?.created_at
+    const accountAge = profile?.createdAt
       ? Math.floor(
-          (Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24)
+          (Date.now() - new Date(profile.createdAt).getTime()) / (1000 * 60 * 60 * 24)
         )
       : 0;
 

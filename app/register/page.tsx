@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { isEmailAllowed } from "@/lib/auth";
+import { authClient } from "@/lib/auth-client";
 import {
   AuroraBackground,
   ParticleField,
@@ -12,7 +11,6 @@ import {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,28 +23,22 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // 1. Validasi whitelist
-      const allowed = await isEmailAllowed(email);
-      if (!allowed) {
-        setError("Email ini tidak terdaftar di whitelist. Hubungi admin.");
-        setLoading(false);
-        return;
-      }
-
-      // 2. Daftarkan akun ke Supabase Auth
-      const { error: signUpError } = await supabase.auth.signUp({
+      // Validasi whitelist & pendaftaran ditangani server (hook Better Auth
+      // menolak email yang tidak ada di allowed_emails).
+      const { error: signUpError } = await authClient.signUp.email({
         email: email.trim(),
         password,
+        name: email.trim().split("@")[0], // nama sementara dari email
       });
 
       if (signUpError) {
-        setError(signUpError.message);
+        setError(signUpError.message || "Pendaftaran gagal. Coba lagi.");
         setLoading(false);
         return;
       }
 
-      // 3. Sukses → arahkan ke login
-      router.push("/login?registered=true");
+      // Sukses → langsung masuk ke chat
+      router.push("/chat");
     } catch {
       setError("Terjadi kesalahan. Coba lagi.");
       setLoading(false);
@@ -92,7 +84,7 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-sm mb-1.5 text-muted-light">
-                Password (min. 6 karakter, ada huruf besar & angka)
+                Password (min. 6 karakter)
               </label>
               <input
                 type="password"

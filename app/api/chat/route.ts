@@ -1,8 +1,9 @@
 // app/api/chat/route.ts — Streaming chat endpoint (Anthropic)
-// Client → POST /api/chat → Server verifikasi auth + ambil riwayat dari Supabase → Anthropic API → stream balik ke client
+// Client → POST /api/chat → Server verifikasi auth + ambil riwayat dari Postgres → Anthropic API → stream balik ke client
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/session";
+import { query, queryOne, isUuid } from "@/lib/db";
 import { AVAILABLE_MODELS, DEFAULT_MODEL, CHAT_CONFIG } from "@/lib/anthropic";
 import { logger } from "@/lib/logger";
 import { getPersona, DEFAULT_PERSONA, type PersonaId } from "@/lib/personas";
@@ -10,11 +11,7 @@ import { getPersona, DEFAULT_PERSONA, type PersonaId } from "@/lib/personas";
 export async function POST(request: NextRequest) {
   try {
     // 1. Verifikasi autentikasi
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -22,7 +19,7 @@ export async function POST(request: NextRequest) {
     // 2. Parse body request
     const { conversationId, message, model, imageUrl, fileContext, persona } = await request.json();
 
-    if (!conversationId || !message?.trim()) {
+    if (!conversationId || !message?.trim() || !isUuid(conversationId)) {
       return NextResponse.json(
         { error: "conversationId and message are required" },
         { status: 400 }
@@ -36,37 +33,33 @@ export async function POST(request: NextRequest) {
         : DEFAULT_MODEL;
 
     // 3. Verifikasi bahwa conversation milik user ini
-    const { data: conversation, error: convError } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("id", conversationId)
-      .eq("user_id", user.id)
-      .single();
+    const conversation = await queryOne(
+      "SELECT id FROM conversations WHERE id = $1 AND user_id = $2",
+      [conversationId, user.id]
+    );
 
-    if (convError || !conversation) {
+    if (!conversation) {
       return NextResponse.json(
         { error: "Conversation not found" },
         { status: 404 }
       );
     }
 
-    // 4. Ambil riwayat pesan dari Supabase (server-side, bukan dari client)
-    const { data: history } = await supabase
-      .from("messages")
-      .select("role, content, image_url")
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
+    // 4. Ambil riwayat pesan dari database (server-side, bukan dari client)
+    const history = await query<{ role: string; content: string; image_url: string | null }>(
+      "SELECT role, content, image_url FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC",
+      [conversationId]
+    );
 
     // 5. Simpan pesan user ke database
-    const { error: saveUserMsgError } = await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      role: "user",
-      content: message.trim(),
-      image_url: imageUrl || null,
-    });
-
-    if (saveUserMsgError) {
-      logger.error("Failed to save user message:", saveUserMsgError);
+    try {
+      await query(
+        "INSERT INTO messages (conversation_id, role, content, image_url) VALUES ($1, 'user', $2, $3)",
+        [conversationId, message.trim(), imageUrl || null]
+      );
+      await query("UPDATE conversations SET updated_at = NOW() WHERE id = $1", [conversationId]);
+    } catch (saveError) {
+      logger.error("Failed to save user message:", saveError);
       return NextResponse.json(
         { error: "Failed to save message" },
         { status: 500 }
@@ -75,11 +68,10 @@ export async function POST(request: NextRequest) {
 
     // 6. Ambil custom instructions user (jika ada)
     let customInstructions = "";
-    const { data: userSettings } = await supabase
-      .from("custom_instructions")
-      .select("instructions")
-      .eq("user_id", user.id)
-      .single();
+    const userSettings = await queryOne<{ instructions: string }>(
+      "SELECT instructions FROM custom_instructions WHERE user_id = $1",
+      [user.id]
+    );
 
     if (userSettings?.instructions) {
       customInstructions = userSettings.instructions;
@@ -237,6 +229,14 @@ export async function POST(request: NextRequest) {
     const encoder = new TextEncoder();
     const chunks: string[] = [];
 
+    const saveAssistantMessage = async (fullContent: string) => {
+      await query(
+        "INSERT INTO messages (conversation_id, role, content) VALUES ($1, 'assistant', $2)",
+        [conversationId, fullContent]
+      );
+      await query("UPDATE conversations SET updated_at = NOW() WHERE id = $1", [conversationId]);
+    };
+
     const stream = new ReadableStream({
       async start(controller) {
         const reader = anthropicResponse.body?.getReader();
@@ -283,21 +283,21 @@ export async function POST(request: NextRequest) {
                   // Simpan assistant reply ke database
                   const fullContent = chunks.join("");
                   if (fullContent) {
-                    await supabase.from("messages").insert({
-                      conversation_id: conversationId,
-                      role: "assistant",
-                      content: fullContent,
-                    });
-
-                    // RAG: Index conversation untuk pencarian masa depan
                     try {
-                      const { indexConversation } = await import("@/lib/rag/search");
-                      await indexConversation(conversationId, user.id, [
-                        { role: "user", content: message.trim() },
-                        { role: "assistant", content: fullContent },
-                      ]);
+                      await saveAssistantMessage(fullContent);
+
+                      // RAG: Index conversation untuk pencarian masa depan
+                      try {
+                        const { indexConversation } = await import("@/lib/rag/search");
+                        await indexConversation(conversationId, user.id, [
+                          { role: "user", content: message.trim() },
+                          { role: "assistant", content: fullContent },
+                        ]);
+                      } catch (err) {
+                        logger.error("RAG indexing error (non-critical):", err);
+                      }
                     } catch (err) {
-                      logger.error("RAG indexing error (non-critical):", err);
+                      logger.error("Failed to save assistant message:", err);
                     }
                   }
                   controller.enqueue(encoder.encode("data: [DONE]\n\n"));
@@ -316,11 +316,11 @@ export async function POST(request: NextRequest) {
         // Fallback: save accumulated content if message_stop wasn't received
         if (chunks.length > 0) {
           const fullContent = chunks.join("");
-          await supabase.from("messages").insert({
-            conversation_id: conversationId,
-            role: "assistant",
-            content: fullContent,
-          });
+          try {
+            await saveAssistantMessage(fullContent);
+          } catch (err) {
+            logger.error("Failed to save assistant message (fallback):", err);
+          }
         }
 
         controller.close();

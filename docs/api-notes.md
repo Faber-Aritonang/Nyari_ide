@@ -114,10 +114,16 @@ TANPA API KEY. Model: **GPT Image 2**
 GET: `https://image.pollinations.ai/prompt/{urlencoded_prompt}?width=1024&height=1024&model=gpt-image-2&nologo=true`
 Opsi model lain: flux, dreamshaper, ideogram-v4-balanced, wan-image
 
-## Supabase
-- Auth: signUp / signInWithPassword
-- RLS WAJIB aktif pada conversations & messages
-- Tabel: allowed_emails, conversations, messages (dengan kolom image_url)
+## Auth & Database (Neon + Better Auth)
+- Auth: Better Auth — `authClient.signIn.email()` / `authClient.signUp.email()`
+- Password: bcrypt (hash lama Supabase Auth tetap valid bila berhasil diimpor)
+- Reset password: `authClient.requestPasswordReset()` → `/reset-password` → `authClient.resetPassword()`.
+  `sendResetPassword` di `lib/auth.ts` mengirim via Resend (`RESEND_API_KEY`) atau mencatat link di log server.
+- Session: cookie httpOnly, dicek di server via `getAuthUser()` (lib/session.ts)
+- Verifikasi route: middleware cek keberadaan cookie, API routes verifikasi sesi penuh
+- Tabel: allowed_emails, conversations, messages, custom_instructions, share_links, saved_prompts, documents, document_chunks, embeddings
+- Tidak ada RLS — semua akses data lewat API route yang menyaring `user_id`
+- RAG: pgvector + fungsi `search_embeddings()` (lihat neon/schema.sql)
 
 ## Dark/Light Mode
 - ThemeProvider: `lib/theme-context.tsx`

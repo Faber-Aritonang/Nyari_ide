@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth-client";
 import { t } from "@/lib/i18n";
 import {
   AuroraBackground,
@@ -13,7 +13,6 @@ import {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClient();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,13 +26,13 @@ function LoginForm() {
     setError(null);
     setLoading(true);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await authClient.signIn.email({
       email: email.trim(),
       password,
     });
 
     if (signInError) {
-      setError(signInError.message);
+      setError(signInError.message || "Login gagal. Coba lagi.");
       setLoading(false);
       return;
     }
@@ -93,6 +92,15 @@ function LoginForm() {
               className="input-neon w-full rounded-xl px-4 py-2.5 text-sm placeholder:text-muted"
               placeholder="••••••••"
             />
+          </div>
+
+          <div className="text-right">
+            <a
+              href="/forgot-password"
+              className="text-xs text-muted hover:text-foreground transition-colors"
+            >
+              Lupa password?
+            </a>
           </div>
 
           {error && (
