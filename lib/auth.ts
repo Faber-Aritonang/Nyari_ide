@@ -7,16 +7,14 @@ import { betterAuth } from "better-auth";
 import { createAuthMiddleware, APIError } from "better-auth/api";
 import bcrypt from "bcryptjs";
 import { pool } from "@/lib/db";
+import { getSiteOrigin, getTrustedOrigins } from "@/lib/site-url";
 
 export const ADMIN_EMAIL = "faber.aritonang@gmail.com";
 
 export const auth = betterAuth({
   appName: "Nyari_ide",
-  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL,
-  trustedOrigins: [
-    "http://localhost:3000",
-    process.env.NEXT_PUBLIC_SITE_URL,
-  ].filter(Boolean) as string[],
+  baseURL: getSiteOrigin(),
+  trustedOrigins: getTrustedOrigins(),
 
   database: pool,
 

@@ -5,6 +5,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/session";
 import { query, queryOne, isUuid } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { getSiteOrigin } from "@/lib/site-url";
+
+// Origin publik app (fallback ke domain produksi bila env belum di-set)
+const SITE_ORIGIN = getSiteOrigin() || "https://nyari-ide.vercel.app";
 
 export async function POST(
   request: NextRequest,
@@ -52,7 +56,7 @@ export async function POST(
 
       return NextResponse.json({
         token: existingLink.token,
-        url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://nyari-ide.vercel.app"}/shared/${existingLink.token}`,
+        url: `${SITE_ORIGIN}/shared/${existingLink.token}`,
         created_at: existingLink.created_at,
       });
     }
@@ -72,7 +76,7 @@ export async function POST(
 
     return NextResponse.json({
       token: newLink.token,
-      url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://nyari-ide.vercel.app"}/shared/${newLink.token}`,
+      url: `${SITE_ORIGIN}/shared/${newLink.token}`,
       created_at: newLink.created_at,
     });
   } catch (error) {
