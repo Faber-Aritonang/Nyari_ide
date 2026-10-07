@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type CSSProperties,
   type ReactNode,
 } from "react";
@@ -219,15 +220,26 @@ export function HoloCube({ size = 72 }: { size?: number }) {
    (desktop only, respects prefers-reduced-motion)
    ============================================================ */
 
+const FINE_POINTER_QUERY = "(pointer: fine)";
+
+/** Subscribe ke perubahan media query pointer (state eksternal, bukan state React). */
+function subscribeFinePointer(onChange: () => void) {
+  const mql = window.matchMedia(FINE_POINTER_QUERY);
+  mql.addEventListener("change", onChange);
+  return () => mql.removeEventListener("change", onChange);
+}
+
 export function CursorGlow() {
   const dotRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
-  const [enabled, setEnabled] = useState(false);
-
-  useEffect(() => {
-    if (window.matchMedia("(pointer: fine)").matches) setEnabled(true);
-  }, []);
+  // useSyncExternalStore membaca media query langsung, tanpa setState di dalam
+  // effect. Snapshot server selalu false → tidak ada hydration mismatch.
+  const enabled = useSyncExternalStore(
+    subscribeFinePointer,
+    () => window.matchMedia(FINE_POINTER_QUERY).matches,
+    () => false
+  );
 
   useEffect(() => {
     if (!enabled) return;

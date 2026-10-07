@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { AuroraBackground } from "@/app/components/Effects3D";
 import { getLang, setLang, type Lang } from "@/lib/i18n";
@@ -26,11 +27,9 @@ export default function SharedPage() {
   const [data, setData] = useState<SharedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lang, setLangState] = useState<Lang>("id");
+  const [lang, setLangState] = useState<Lang>(() => getLang());
 
   useEffect(() => {
-    setLangState(getLang());
-
     const fetchShared = async () => {
       try {
         const res = await fetch(`/api/shared/${token}`);
@@ -40,8 +39,8 @@ export default function SharedPage() {
         }
         const json = await res.json();
         setData(json);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load");
       } finally {
         setLoading(false);
       }
@@ -73,12 +72,12 @@ export default function SharedPage() {
             {lang === "id" ? "Tidak Dapat Diakses" : "Not Available"}
           </h1>
           <p className="text-muted">{error}</p>
-          <a
+          <Link
             href="/"
             className="btn-neon mt-4 inline-block px-5 py-2 rounded-xl text-sm font-semibold"
           >
             {lang === "id" ? "Kembali ke Beranda" : "Back to Home"}
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -156,12 +155,12 @@ export default function SharedPage() {
               ? "Dibagikan dari Nyari_ide"
               : "Shared from Nyari_ide"}
           </p>
-          <a
+          <Link
             href="/"
             className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-1)] to-[var(--neon-3)] font-medium hover:opacity-80"
           >
             {lang === "id" ? "Coba Nyari_ide" : "Try Nyari_ide"}
-          </a>
+          </Link>
         </div>
       </main>
     </div>

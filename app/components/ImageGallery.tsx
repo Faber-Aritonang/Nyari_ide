@@ -23,24 +23,29 @@ export default function ImageGallery({ isOpen, onClose }: ImageGalleryProps) {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchImages();
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    let cancelled = false;
 
-  async function fetchImages() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/images");
-      if (res.ok) {
-        const data = await res.json();
-        setImages(data.images || []);
+    async function loadImages() {
+      try {
+        const res = await fetch("/api/images");
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setImages(data.images || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch images:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to fetch images:", err);
     }
-    setLoading(false);
-  }
+
+    loadImages();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

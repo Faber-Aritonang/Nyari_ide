@@ -35,24 +35,29 @@ export default function PromptLibrary({ isOpen, onClose, onSelect, lang }: Promp
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    if (isOpen) {
-      fetchPrompts();
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    let cancelled = false;
 
-  async function fetchPrompts() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/prompts");
-      if (res.ok) {
-        const data = await res.json();
-        setPrompts(data);
+    async function loadPrompts() {
+      try {
+        const res = await fetch("/api/prompts");
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setPrompts(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch prompts:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to fetch prompts:", err);
     }
-    setLoading(false);
-  }
+
+    loadPrompts();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   async function handleSave() {
     if (!title.trim() || !content.trim()) return;

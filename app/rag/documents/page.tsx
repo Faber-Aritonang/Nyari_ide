@@ -1,7 +1,7 @@
 // app/rag/documents/page.tsx — Halaman Manage Documents untuk RAG
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { t, getLang, setLang, type Lang } from "@/lib/i18n";
@@ -28,6 +28,18 @@ export default function DocumentsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const res = await fetch("/api/rag/documents");
+      const data = await res.json();
+      setDocuments(data.documents || []);
+    } catch (err) {
+      console.error("Failed to fetch documents:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       const { data } = await authClient.getSession();
@@ -42,19 +54,7 @@ export default function DocumentsPage() {
     };
 
     loadData();
-  }, [router]);
-
-  const fetchDocuments = async () => {
-    try {
-      const res = await fetch("/api/rag/documents");
-      const data = await res.json();
-      setDocuments(data.documents || []);
-    } catch (err) {
-      console.error("Failed to fetch documents:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [router, fetchDocuments]);
 
   const handleFileUpload = async (file: File) => {
     if (uploading) return;

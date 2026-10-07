@@ -27,26 +27,33 @@ export default function UsageDashboard({ isOpen, onClose, lang }: UsageDashboard
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchUsage();
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    let cancelled = false;
 
-  async function fetchUsage() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/usage");
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data.stats);
-        setMessagesByDay(data.messagesByDay);
-        setTopConversations(data.topConversations);
+    async function loadUsage() {
+      try {
+        const res = await fetch("/api/usage");
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) {
+            setStats(data.stats);
+            setMessagesByDay(data.messagesByDay);
+            setTopConversations(data.topConversations);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch usage:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to fetch usage:", err);
     }
-    setLoading(false);
-  }
+
+    loadUsage();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
