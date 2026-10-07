@@ -2,7 +2,8 @@
 
 ## Prasyarat
 - Node.js ≥ 18
-- API key Groq ✅
+- API key Anthropic ✅ (untuk LLM chat + vision)
+- API key Groq ✅ (untuk TTS Orpheus + voice input Whisper)
 - Akun Neon (gratis): https://neon.tech — PostgreSQL serverless + pgvector
 - Akun Vercel (gratis): https://vercel.com
 
@@ -43,8 +44,8 @@ Variabel wajib:
 | `BETTER_AUTH_SECRET` | `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | `http://localhost:3000` saat dev, domain saat production |
 | `NEXT_PUBLIC_SITE_URL` | URL publik app (dipakai link share) |
-| `GROQ_API_KEY` | Chat, vision, whisper, TTS |
-| `ANTHROPIC_API_KEY` | Chat streaming |
+| `ANTHROPIC_API_KEY` | LLM chat + vision (streaming) — wajib untuk fitur chat |
+| `GROQ_API_KEY` | TTS (Orpheus) + voice input (Whisper) — wajib untuk fitur suara |
 
 Opsional: `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` (text-to-image),
 `OPENAI_API_KEY` (embedding RAG berkualitas; tanpa ini pakai embedding hash lokal),

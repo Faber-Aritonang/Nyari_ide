@@ -1,5 +1,11 @@
 # ROADMAP — Nyari_ide
 
+> 🧭 Catatan status: daftar di bawah adalah **catatan historis per fase** dan masih
+> menyebut Supabase & Groq sebagai stack yang dipakai saat itu. Stack terkini:
+> **Neon Postgres + Better Auth** untuk data/auth, **Anthropic Claude Haiku 4.5**
+> untuk LLM chat/vision, dan **Groq** khusus untuk TTS + voice input.
+> Lihat `PROJECT_CONTEXT.md` (status terkini) dan `docs/design-decisions.md` DD-20.
+
 ## FASE 0 — Fondasi ✅
 - [x] Desain & brainstorming
 - [x] Dokumentasi awal (README, PROJECT_CONTEXT, ROADMAP, docs/)
@@ -191,6 +197,41 @@
 - [x] Offline Mode — IndexedDB cache untuk akses percakapan tanpa internet
 - [x] Offline indicator — banner kuning saat offline
 - [x] Auto-cache — percakapan otomatis di-cache saat online
+
+## v2.8 — Export ke Canva ✅
+- [x] Export chat ke Canva — `exportChatCanva()` di `app/chat/page.tsx`: render percakapan
+  ke PDF, otomatis terunduh, lalu modal panduan import manual ke Canva
+  (Create a design → Import file → jadi desain editable)
+- [x] Refactor export PDF → `buildChatPdf()` menghasilkan `{ blob, filename }`, dipakai
+  ulang oleh export PDF biasa & export ke Canva (tanpa duplikasi kode render)
+- [x] Tombol 🎨 "Ke Canva" di menu export sidebar chat (disabled + label "Menyiapkan PDF..."
+  saat `canvaPreparing`)
+- [x] Modal panduan: 3 langkah + catatan "tanpa API key", tombol "Buka Canva" (canva.com)
+  & "Unduh PDF lagi" (dari blob tersimpan di `canvaPdfRef`)
+- [x] Semua teks panduan bilingual (ID/EN) — key `canva*` di `lib/i18n.ts`
+- [ ] (Backlog) Canva Connect API — import otomatis via OAuth tanpa langkah manual
+
+## Unreleased — 2026-10-06
+
+### 🔄 Perubahan Besar
+- [x] Migrasi database & auth: Supabase → **Neon Postgres + Better Auth**
+  (bcrypt, whitelist tetap di `allowed_emails`, tanpa RLS — query difilter `user_id`
+  di API route)
+- [x] Migrasi LLM chat: Groq → **Anthropic Claude Haiku 4.5** (`lib/anthropic.ts`,
+  endpoint `/v1/messages`); Groq tersisa untuk **Orpheus TTS** + **Whisper** (voice input)
+
+### ✨ Fitur Baru
+- [x] Alur lupa password — `/forgot-password` → link reset (berlaku 1 jam) →
+  `/reset-password`; kirim via Resend bila `RESEND_API_KEY` diisi
+- [x] Export ke Canva (lihat section v2.8 di atas)
+
+### 🔧 Perbaikan
+- [x] Perbaiki 9 error ESLint (setState di effect, urutan deklarasi fungsi, tipe `any`,
+  `<a>` → `<Link />` untuk navigasi internal)
+
+### 📚 Dokumentasi
+- [x] Sinkronisasi docs dengan stack terkini — `README.md`, `PROJECT_CONTEXT.md`,
+  `docs/api-notes.md`, `docs/setup.md`, `docs/design-decisions.md` (DD-20), `.env.example`
 
 ## Masa Depan (backlog)
 - [ ] Multi-language TTS (bahasa lain selain EN + AR)

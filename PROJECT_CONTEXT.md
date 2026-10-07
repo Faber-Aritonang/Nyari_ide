@@ -3,36 +3,40 @@
 > ⭐ FILE KUNCI KONTINUITAS. Update setiap akhir sesi kerja!
 > AI assistant cukup dibekali file ini untuk melanjutkan project.
 
-Last updated: 5 Oktober 2026
+Last updated: 6 Oktober 2026
 Current phase: Migrasi Supabase → Neon + Better Auth SELESAI ✅ (data terimpor, alur reset password tersedia)
+LLM chat sudah pindah ke Anthropic Claude Haiku 4.5 (Groq masih dipakai untuk TTS & STT).
 
 ## Ringkasan Project
-Webpage chat AI multimodal (text, image, voice), LLM opensource via Groq API,
+Webpage chat AI multimodal (text, image, voice), LLM via Anthropic Claude Haiku,
 deploy free di internet, akses terbatas via whitelist (maks 10 akun),
 autentikasi email+password (Better Auth).
 
 ## Tech Stack
 - Frontend: Next.js 16 (App Router, TypeScript, Tailwind CSS)
 - Theme: Dark/Light mode toggle (CSS variables + ThemeProvider)
-- LLM: Groq API — model selection lihat lib/groq.ts
+- LLM: Anthropic Claude Haiku 4.5 — model selection lihat lib/anthropic.ts
 - TTS: Groq Orpheus (English + Arabic Saudi untuk Indonesia)
 - STT: Whisper Large v3 Turbo via Groq
-- Text-to-image: Pollinations.ai (GPT Image 2)
+- Text-to-image: Cloudflare Workers AI (FLUX) dengan fallback Pollinations.ai
 - PDF extraction: pdfjs-dist (client-side)
 - Auth & DB: Better Auth (email+password) + Neon Postgres (pgvector untuk RAG)
 - Deploy: Vercel (free tier)
 - Markdown rendering: react-markdown
 
-## Model yang Tersedia (Groq)
+## Model yang Tersedia
+
+### LLM chat (Anthropic) — `lib/anthropic.ts`
 | Model | Tipe | Keterangan |
 |---|---|---|
-| qwen/qwen3.8-27b | Chat + Vision | Default, bagus untuk chat & coding |
-| qwen/qwen3.6-27b | Chat + Vision | Alternatif Qwen |
-| openai/gpt-oss-120b | Chat only | Flagship, kualitas terbaik |
-| openai/gpt-oss-20b | Chat only | Cepat & ringan |
+| claude-haiku-4-5-20251001 | Chat + Vision | Default — cepat & hemat token |
+
+### TTS & STT (Groq) — dipakai internal di API route
+| Model | Tipe | Keterangan |
+|---|---|---|
 | whisper-large-v3-turbo | STT | Voice input (cepat) |
-| orpheus-v1-english | TTS | Suara natural English |
-| orpheus-arabic-saudi | TTS | Suara natural untuk Indonesia |
+| canopylabs/orpheus-v1-english | TTS | Suara natural English |
+| canopylabs/orpheus-arabic-saudi | TTS | Suara natural untuk Indonesia |
 
 ## Status Pengerjaan
 ✅ FASE 0 — Fondasi (SELESAI)
@@ -47,8 +51,8 @@ autentikasi email+password (Better Auth).
 ### Fitur Lengkap v2.1:
 | Fitur | Teknologi | Biaya |
 |---|---|---|
-| 💬 Chat text streaming | Qwen 3.8 27B via Groq | Gratis |
-| 🖼️ Upload gambar → vision | Qwen 3.8 + compress otomatis | Gratis |
+| 💬 Chat text streaming | Claude Haiku 4.5 via Anthropic | Berbayar (pay-as-you-go) |
+| 🖼️ Upload gambar → vision | Claude Haiku 4.5 + compress otomatis | Berbayar (pay-as-you-go) |
 | 📄 Upload file teks | Context injection (max 8000 chars) | Gratis |
 | 📎 Upload PDF | pdf.js client-side (max 10 halaman) | Gratis |
 | 🎨 Text-to-image | GPT Image 2 via Pollinations.ai | Gratis |
@@ -58,6 +62,7 @@ autentikasi email+password (Better Auth).
 | 📋 Copy to Clipboard | Salin jawaban dengan satu klik | - |
 | ✏️ Edit Message | Edit pesan, AI respon ulang | Gratis |
 | 📄 Export Chat | Export ke Markdown / PDF | - |
+| 🎨 Export ke Canva | PDF percakapan + panduan import manual ke Canva | Gratis |
 | ⌨️ Keyboard Shortcuts | Ctrl+Enter, Ctrl+N, Ctrl+E, Ctrl+D, Escape | - |
 | ⚙️ Custom Instructions | Atur bagaimana AI merespons (per user) | Gratis |
 | 🔗 Share Link | Bagikan percakapan via URL unik | Gratis |
@@ -76,7 +81,7 @@ autentikasi email+password (Better Auth).
 ```
 app/
 ├── api/
-│   ├── chat/route.ts              — Streaming chat ke Groq
+│   ├── chat/route.ts              — Streaming chat ke Anthropic
 │   ├── models/route.ts            — List model tersedia
 │   ├── transcribe/route.ts        — Whisper STT
 │   ├── tts/route.ts               — Groq Orpheus TTS
@@ -114,13 +119,13 @@ middleware.ts                       — Next.js middleware entry point
 - Riwayat chat disimpan di Neon per user; tanpa RLS — semua query difilter `user_id` di API route
 - API key TIDAK PERNAH di frontend → semua via API route server-side
 - Streaming via ReadableStream dari API route ke client
-- Riwayat diambil server-side sebelum call Groq (bukan dari client)
+- Riwayat diambil server-side sebelum call Anthropic (bukan dari client)
 - Judul percakapan = potongan pesan pertama user (maks ~50 char)
 - Gambar dikompres otomatis (512x512 JPEG 60%) sebelum dikirim
 - Gambar/file LAMA di-strip dari riwayat → hanya konten terkini yang dikirim
 - File teks: max 8000 chars (~2000 tokens) — hemat TPM
 - PDF: max 10 halaman, max 8000 chars
-- Model selector: daftar model di lib/groq.ts, validasi server-side
+- Model selector: daftar model di lib/anthropic.ts, validasi server-side
 - TTS: Orpheus English (hannah) untuk English, Orpheus Arabic Saudi (noura) untuk Indonesia
 - Text-to-image: Pollinations.ai GPT Image 2 (gratis, tanpa API key)
 - Admin: hanya email faber.aritonang@gmail.com yang bisa akses /admin
@@ -132,7 +137,7 @@ middleware.ts                       — Next.js middleware entry point
 
 ## Known Issues
 - Next.js 16 warning "middleware convention is deprecated, use proxy instead" — aman diabaikan
-- Groq free tier TPM limit ketat (8000 TPM untuk qwen) — gambar harus dikompres
+- Anthropic: riwayat pesan dipotong (maks 10 pesan × 500 karakter) dan system prompt dibatasi 2000 karakter untuk menekan biaya token — gambar tetap harus dikompres
 - Orpheus TTS rate limit: jangan klik Listen terlalu cepat (tunggu 10-15 detik)
 - Export PDF menggunakan html2canvas + jsp di client-side (ukuran bundle agak besar)
 

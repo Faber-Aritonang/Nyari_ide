@@ -7,6 +7,42 @@ dan proyek ini menggunakan [Semantic Versioning](https://semver.org/lang/id-ID/)
 
 ---
 
+## [Unreleased] — 2026-10-06
+
+### 🔄 Perubahan Besar
+
+- **Migrasi database & auth** — dari Supabase ke **Neon Postgres + Better Auth**.
+  Password memakai bcrypt (kompatibel dengan hash Supabase lama bila terimpor),
+  whitelist tetap di tabel `allowed_emails`, dan tidak ada RLS (query difilter `user_id` di API route).
+- **Migrasi LLM chat** — dari Groq (Qwen 3.8/3.6, GPT-OSS) ke **Anthropic Claude Haiku 4.5**
+  (`lib/anthropic.ts`, endpoint `/v1/messages`). Groq kini hanya dipakai untuk
+  **Orpheus TTS** dan **Whisper** (voice input) karena Anthropic tidak menyediakan keduanya.
+  Konsekuensi: fitur chat tidak lagi 100% gratis (berbayar per token).
+
+### ✨ Fitur Baru
+
+- **Export ke Canva** — tombol 🎨 "Ke Canva" di sidebar chat: percakapan di-export ke PDF
+  (logic PDF direfactor jadi `buildChatPdf()`, dipakai ulang oleh export PDF biasa), file
+  otomatis terunduh, lalu muncul modal panduan langkah demi langkah untuk meng-import PDF
+  ke Canva (Create a design → Import file) menjadi desain editable — plus tombol
+  "Buka Canva" dan "Unduh PDF lagi". Tanpa API key (jalur manual), teks ID/EN.
+- **Alur lupa password** — `/forgot-password` → link reset (berlaku 1 jam) → `/reset-password`.
+  Terkirim via Resend bila `RESEND_API_KEY` diisi; tanpa itu link hanya dicatat di log server.
+  Reset pertama juga membuat baris `account` (credential) sehingga user lama hasil migrasi bisa masuk.
+
+### 🔧 Perbaikan
+
+- Perbaiki 9 error ESLint (setState di dalam effect, urutan deklarasi fungsi, tipe `any`,
+  dan `<a>` untuk navigasi internal diganti `<Link />`).
+
+### 📚 Dokumentasi
+
+- Selaraskan dokumentasi dengan stack terkini (Anthropic untuk LLM, Groq hanya untuk suara),
+  termasuk `README.md`, `PROJECT_CONTEXT.md`, `docs/api-notes.md`, `docs/setup.md`,
+  `docs/design-decisions.md` (DD-20) dan `.env.example`.
+
+---
+
 ## [v1.1.0](https://github.com/Faber-Aritonang/Nyari_ide/releases/tag/v1.1) — 2026-08-28
 
 ### ✨ Fitur Baru

@@ -3,10 +3,10 @@
 ![Version](https://img.shields.io/badge/version-v2.7-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
-![Supabase](https://img.shields.io/badge/Supabase-Database-3FCF8E)
+![Neon](https://img.shields.io/badge/Neon-Database-00E599)
 
 **Nyari_ide** (dari bahasa gaul: *"nyari ide"* = mencari ide) adalah sebuah proyek
-membangun **aplikasi web chat AI multimodal berbasis model LLM opensource** —
+membangun **aplikasi web chat AI multimodal** —
 seperti ChatGPT versi pribadi, tapi:
 
 - 🔓 Dibangun di atas teknologi **opensource**
@@ -25,9 +25,9 @@ Pengguna yang sudah login dapat:
 ### 💬 Chat & Komunikasi
 | Fitur | Penjelasan |
 |---|---|
-| 💬 Chat text streaming | Bertanya/jawab dengan LLM opensource (Qwen 3.8 27B via Groq API), respons streaming |
+| 💬 Chat text streaming | Bertanya/jawab dengan Claude Haiku 4.5 (Anthropic API), respons streaming |
 | 🎭 AI Persona | Ganti persona AI: Teman Diskusi, Coding Expert, Creative Writer, Business Mentor, Ahli Bahasa Indonesia, Minimalis |
-| 🔄 Model selector | Pilih model AI: Qwen 3.8/3.6, GPT-OSS 120B/20B |
+| 🔄 Model selector | Pilih model AI yang tersedia (saat ini Claude Haiku 4.5) |
 | 🌐 Bilingual | Antarmuka dalam Bahasa Indonesia & English |
 | ⌨️ Keyboard Shortcuts | Ctrl+Enter kirim, Ctrl+N baru, Ctrl+E export, Ctrl+D hapus |
 
@@ -57,6 +57,7 @@ Pengguna yang sudah login dapat:
 | 💻 Code Highlighting | Syntax highlighting + tombol copy per code block |
 | ▶️ Code Execution | Eksekusi kode JavaScript langsung di browser (sandboxed iframe) |
 | 📄 Export PDF | Export percakapan ke PDF |
+| 🎨 Export ke Canva | Unduh PDF percakapan + panduan import ke Canva (jadi desain editable) |
 | 📦 Export/Import JSON | Export/Import riwayat chat ke file JSON |
 | 🔗 Share Link | Bagikan percakapan via URL unik |
 
@@ -135,7 +136,8 @@ Next.js Web App ──► Better Auth (whitelist maks 10 akun)
 │                    Neon Postgres (riwayat chat per user, pgvector untuk RAG)
 │                    IndexedDB (offline cache)
 │
-├──► Groq API : chat text + vision + whisper + Orpheus TTS (LLM opensource)
+├──► Anthropic API : chat text + vision (Claude Haiku 4.5)
+├──► Groq API : whisper (voice input) + Orpheus TTS
 ├──► Cloudflare Workers AI : text-to-image (FLUX.1 schnell)
 ├──► Pollinations.ai : text-to-image (fallback, gratis)
 └──► Admin page : manajemen whitelist
@@ -213,7 +215,7 @@ Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 | [`ROADMAP.md`](./ROADMAP.md) | Rencana kerja per fase dengan milestone |
 | [`docs/design-decisions.md`](./docs/design-decisions.md) | Log semua keputusan desain beserta alasannya |
 | [`docs/setup.md`](./docs/setup.md) | Panduan setup environment & deploy |
-| [`docs/api-notes.md`](./docs/api-notes.md) | Catatan teknis integrasi Groq, Pollinations, Better Auth/Neon |
+| [`docs/api-notes.md`](./docs/api-notes.md) | Catatan teknis integrasi Anthropic & Groq, Pollinations, Better Auth/Neon |
 
 ---
 
@@ -222,7 +224,7 @@ Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 | Komponen | Teknologi |
 |---|---|
 | Frontend | Next.js 16 (TypeScript, Tailwind CSS, App Router) |
-| LLM | Groq API — Qwen 3.8/3.6, GPT-OSS 120B/20B (opensource) |
+| LLM | Anthropic API — Claude Haiku 4.5 (chat + vision, streaming) |
 | TTS | Groq Orpheus — English (hannah) + Arabic Saudi (noura) |
 | Voice input | Whisper Large v3 Turbo via Groq |
 | Text-to-image | Cloudflare Workers AI (FLUX.1) + Pollinations.ai (fallback) |
@@ -231,7 +233,7 @@ Roadmap lengkap ada di [ROADMAP.md](./ROADMAP.md):
 | PDF extraction | pdfjs-dist (client-side) |
 | Auth + Database | Better Auth (email+password) + Neon Postgres (pgvector untuk RAG) |
 | Offline Cache | IndexedDB (percakapan terakhir) |
-| Export | jsPDF + html2canvas (PDF), JSON, Markdown |
+| Export | jsPDF + html2canvas (PDF, termasuk export ke Canva), JSON, Markdown |
 | Logging | lib/logger.ts (production-safe, silent di production) |
 | Deploy | Vercel (free tier) |
 
