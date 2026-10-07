@@ -62,6 +62,8 @@ export default function ChatPage() {
   const [usageOpen, setUsageOpen] = useState(false);
   const [promptsOpen, setPromptsOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [canvaOpen, setCanvaOpen] = useState(false);
+  const [canvaPreparing, setCanvaPreparing] = useState(false);
   const [selectedPersona, setSelectedPersona] = useState<PersonaId>(DEFAULT_PERSONA);
   const [isOffline, setIsOffline] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,6 +77,7 @@ export default function ChatPage() {
   const [searchLoading, setSearchLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const canvaPdfRef = useRef<{ blob: Blob; filename: string } | null>(null);
 
   // Send browser notification when AI finishes responding
   function sendNotification() {
@@ -913,9 +916,9 @@ export default function ChatPage() {
     URL.revokeObjectURL(url);
   }
 
-  // Export chat as PDF
-  async function exportChatPDF() {
-    if (messages.length === 0) return;
+  // Build PDF dari percakapan (dipakai export PDF & export ke Canva)
+  async function buildChatPdf(): Promise<{ blob: Blob; filename: string }> {
+    if (messages.length === 0) throw new Error("No messages");
 
     const convTitle = conversations.find((c) => c.id === activeConvId)?.title || "Chat";
 
@@ -949,12 +952,53 @@ export default function ChatPage() {
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${convTitle.replace(/[^a-z0-9]/gi, "_").slice(0, 50)}.pdf`);
+
+      return {
+        blob: pdf.output("blob"),
+        filename: `${convTitle.replace(/[^a-z0-9]/gi, "_").slice(0, 50)}.pdf`,
+      };
+    } finally {
+      document.body.removeChild(tempDiv);
+    }
+  }
+
+  function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Export chat as PDF
+  async function exportChatPDF() {
+    if (messages.length === 0) return;
+
+    try {
+      const { blob, filename } = await buildChatPdf();
+      downloadBlob(blob, filename);
     } catch (err) {
       console.error("PDF export error:", err);
       alert("Failed to export PDF");
+    }
+  }
+
+  // Export chat ke Canva — unduh PDF lalu pandu user meng-import-nya ke Canva
+  async function exportChatCanva() {
+    if (messages.length === 0) return;
+
+    setCanvaPreparing(true);
+    try {
+      const pdf = await buildChatPdf();
+      canvaPdfRef.current = pdf;
+      downloadBlob(pdf.blob, pdf.filename);
+      setCanvaOpen(true);
+    } catch (err) {
+      console.error("Canva export error:", err);
+      alert(t("canvaError"));
     } finally {
-      document.body.removeChild(tempDiv);
+      setCanvaPreparing(false);
     }
   }
 
@@ -1312,6 +1356,14 @@ export default function ChatPage() {
                 📄 Export PDF
               </button>
               <button
+                onClick={exportChatCanva}
+                disabled={canvaPreparing}
+                className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2 disabled:opacity-50"
+                title={t("canvaTitle")}
+              >
+                🎨 {canvaPreparing ? t("canvaPreparing") : t("exportCanva")}
+              </button>
+              <button
                 onClick={exportChatJSON}
                 className="w-full rounded-lg bg-input-bg hover:bg-surface-hover py-2 text-xs transition-colors mb-2"
                 title="Export as JSON"
@@ -1559,6 +1611,63 @@ export default function ChatPage() {
         }}
         lang={lang}
       />
+
+      {/* Export to Canva Modal */}
+      {canvaOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 z-50"
+            onClick={() => setCanvaOpen(false)}
+          />
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-background border border-border rounded-xl shadow-2xl p-5">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold">🎨 {t("canvaTitle")}</h2>
+              <button
+                onClick={() => setCanvaOpen(false)}
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-muted mb-4">{t("canvaNote")}</p>
+
+            <ol className="space-y-2 text-sm mb-5">
+              <li className="flex gap-2">
+                <span className="text-[color:var(--neon-2)] font-semibold">1.</span>
+                <span>{t("canvaStep1")}</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-[color:var(--neon-2)] font-semibold">2.</span>
+                <span>{t("canvaStep2")}</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-[color:var(--neon-2)] font-semibold">3.</span>
+                <span>{t("canvaStep3")}</span>
+              </li>
+            </ol>
+
+            <a
+              href="https://www.canva.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-center btn-neon rounded-xl px-4 py-3 text-sm font-semibold tracking-wide mb-2"
+            >
+              🎨 {t("canvaOpen")}
+            </a>
+            <button
+              onClick={() => {
+                if (canvaPdfRef.current) {
+                  downloadBlob(canvaPdfRef.current.blob, canvaPdfRef.current.filename);
+                }
+              }}
+              className="w-full rounded-xl bg-input-bg hover:bg-surface-hover px-4 py-2.5 text-sm transition-colors"
+            >
+              📄 {t("canvaDownloadAgain")}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
